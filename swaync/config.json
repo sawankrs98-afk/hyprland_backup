@@ -1,0 +1,30 @@
+{
+    "$schema": "/etc/xdg/swaync/customSchema.json",
+    "positionX": "right",
+    "positionY": "top",
+    "control-center-margin-top": 12,
+    "control-center-margin-bottom": 12,
+    "control-center-margin-right": 12,
+    "control-center-margin-left": 12,
+    "control-center-width": 380,
+    "fit-to-screen": false,
+    "layer": "overlay",
+    "control-center-layer": "overlay",
+    "layer-shell": true,
+    "cssPriority": "user",
+    "widgets": [
+        "title",
+        "dnd",
+        "notifications"
+    ],
+    "widget-config": {
+        "title": {
+            "text": "Notifications",
+            "clear-all-button": true,
+            "button-text": "󰎟 Clear All"
+        },
+        "dnd": {
+            "text": "Do Not Disturb"
+        }
+    }
+}

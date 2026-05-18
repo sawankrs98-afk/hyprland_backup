@@ -1,0 +1,17 @@
+configuration {
+    modi: "drun,run,filebrowser";
+    show-icons: true;
+    display-drun: "󰣇 Apps";
+    display-run: " Run";
+    display-filebrowser: "󰉋 Files";
+    drun-display-format: "{name}";
+    font: "JetBrainsMono Nerd Font Propo 13";
+    
+    /* Advanced features: hover to select */
+    hover-select: true;
+    me-select-entry: "";
+    me-accept-entry: "MousePrimary";
+}
+
+/* This imports the styling from the file below */
+@theme "style.rasi"

@@ -1,0 +1,91 @@
+* {
+    /* Premium, clean dark colors */
+    bg-main:       rgba(24, 24, 37, 0.95); /* Deep solid base */
+    bg-input:      rgba(49, 50, 68, 0.5);  /* Slightly lighter for input */
+    fg-main:       #cdd6f4;                /* Bright text */
+    fg-dim:        #a6adc8;                /* Dimmed placeholder text */
+    accent:        #89b4fa;                /* Sleek blue accent */
+    bg-selected:   #89b4fa;                /* Solid blue for selection */
+    fg-selected:   #11111b;                /* Dark text on selection */
+
+    background-color: transparent;
+    text-color:       @fg-main;
+    margin:           0;
+    padding:          0;
+    spacing:          0;
+}
+
+window {
+    width:            640px;
+    background-color: @bg-main;
+    border:           0px;         /* ABSOLUTELY NO BORDERS */
+    border-radius:    24px;
+    padding:          24px;
+}
+
+mainbox {
+    children:  [inputbar, listview];
+    spacing:   20px;
+}
+
+inputbar {
+    background-color: @bg-input;
+    children:         [prompt, entry];
+    border-radius:    16px;
+    padding:          16px 20px;
+    spacing:          16px;
+}
+
+prompt {
+    text-color:     @accent;
+    font:           "JetBrainsMono Nerd Font Propo 16";
+    vertical-align: 0.5;
+}
+
+entry {
+    placeholder:       "Type to search...";
+    placeholder-color: @fg-dim;
+    text-color:        @fg-main;
+    font:              "JetBrainsMono Nerd Font Propo 14";
+    vertical-align:    0.5;
+}
+
+listview {
+    lines:      6;
+    columns:    1;
+    scrollbar:  false;
+    spacing:    8px;
+    dynamic:    true;
+}
+
+element {
+    padding:       12px 16px;
+    border-radius: 12px;
+    spacing:       16px;
+    orientation:   horizontal;
+    cursor:        pointer;
+}
+
+element-icon {
+    size:             28px;
+    background-color: inherit;
+    text-color:       inherit;
+}
+
+element-text {
+    vertical-align:   0.5;
+    background-color: inherit;
+    text-color:       inherit;
+    font:             "JetBrainsMono Nerd Font Propo 13";
+}
+
+element normal.normal,
+element alternate.normal {
+    background-color: transparent;
+    text-color:       @fg-main;
+}
+
+element selected.normal {
+    background-color: @bg-selected;
+    text-color:       @fg-selected;
+}

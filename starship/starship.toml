@@ -1,0 +1,205 @@
+# ═══════════════════════════════════════════════════
+#    STARSHIP — CATPPUCCIN MOCHA ISLANDS
+# ═══════════════════════════════════════════════════
+
+add_newline = true
+command_timeout = 1500
+scan_timeout = 50
+palette = "catppuccin_mocha"
+
+# ─── FORMAT ────────────────────────────────────────
+format = """
+$os\
+$username\
+$directory\
+$git_branch\
+$git_status\
+$git_metrics\
+$git_state\
+$c\
+$cpp\
+$nodejs\
+$python\
+$rust\
+$golang\
+$java\
+$php\
+$lua\
+$cmake\
+$swift\
+$kotlin\
+$dart\
+$package\
+$docker_context\
+$container\
+$nix_shell\
+$conda\
+$memory_usage\
+$battery\
+$sudo\
+$jobs\
+$line_break\
+$character\
+"""
+
+right_format = """$status$cmd_duration$time"""
+
+# ─── PALETTE (CATPPUCCIN MOCHA) ────────────────────
+[palettes.catppuccin_mocha]
+base     = "#1e1e2e"
+surface  = "#313244"
+text     = "#cdd6f4"
+subtext  = "#a6adc8"
+mauve    = "#cba6f7"
+blue     = "#89b4fa"
+sapphire = "#74c7ec"
+sky      = "#89dceb"
+teal     = "#94e2d5"
+green    = "#a6e3a1"
+yellow   = "#f9e2af"
+peach    = "#fab387"
+maroon   = "#eba0ac"
+red      = "#f38ba8"
+
+# ─── OS & USER ─────────────────────────────────────
+[os]
+format = "[](blue)[$symbol](bg:blue fg:base)[ ](blue)"
+disabled = false
+
+[os.symbols]
+Arch        = "󰣇"
+EndeavourOS = ""
+Fedora      = "󰣛"
+Linux       = "󰣇"
+Macos       = "󰀵"
+Windows     = "󰍲"
+
+[username]
+format = "[](red)[$user](bg:red fg:base)[ ](red)"
+show_always = false
+style_root = "bg:red fg:base bold"
+style_user = "bg:red fg:base"
+
+# ─── DIRECTORY ─────────────────────────────────────
+[directory]
+format = "[](mauve)[$icon $path](bg:mauve fg:base)[$read_only](bg:mauve fg:red)[ ](mauve)"
+style = "bold mauve"
+read_only = " 󰌾"
+truncation_length = 3
+truncation_symbol = "…/"
+home_symbol = "󰋜"
+use_os_path_sep = true
+
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = "󱑢 "
+"Music"     = "󰝚 "
+"Pictures"  = " "
+"Videos"    = "󰕧 "
+"Desktop"   = " "
+"Projects"  = "󰲋 "
+
+# ─── CHARACTER ─────────────────────────────────────
+[character]
+success_symbol = "[ 󰄾](bold green) "
+error_symbol   = "[ 󰅙](bold red) "
+vicmd_symbol   = "[ ❮](bold mauve) "
+
+# ─── GIT ───────────────────────────────────────────
+[git_branch]
+format = "[](green)[$symbol $branch(:$remote_branch)](bg:green fg:base)[ ](green)"
+symbol = ""
+truncation_length = 20
+
+[git_status]
+format = "[](yellow)[$all_status$ahead_behind](bg:yellow fg:base)[ ](yellow)"
+conflicted  = "═"
+ahead       = "⇡${count}"
+behind      = "⇣${count}"
+diverged    = "⇕⇡${ahead_count}⇣${behind_count}"
+untracked   = " ?${count}"
+stashed     = " 󰏗 "
+modified    = " !${count}"
+staged      = " +${count}"
+renamed     = " »${count}"
+deleted     = " -${count}"
+
+[git_metrics]
+disabled = false
+format = "[](teal)[+$added](bg:teal fg:base) [-$deleted](bg:teal fg:base)[ ](teal)"
+
+# ─── LANGUAGES & TOOLS ─────────────────────────────
+[c]
+format = "[](sapphire)[$symbol ($version)](bg:sapphire fg:base)[ ](sapphire)"
+symbol = ""
+
+[cpp]
+format = "[](sapphire)[$symbol ($version)](bg:sapphire fg:base)[ ](sapphire)"
+symbol = ""
+
+[nodejs]
+format = "[](green)[$symbol ($version)](bg:green fg:base)[ ](green)"
+symbol = "󰎙"
+
+[python]
+format = "[](yellow)[$symbol $pyenv_prefix($version)(\\($virtualenv\\))](bg:yellow fg:base)[ ](yellow)"
+symbol = ""
+
+[rust]
+format = "[](peach)[$symbol ($version)](bg:peach fg:base)[ ](peach)"
+symbol = ""
+
+[golang]
+format = "[](sky)[$symbol ($version)](bg:sky fg:base)[ ](sky)"
+symbol = ""
+
+[java]
+format = "[](red)[$symbol ($version)](bg:red fg:base)[ ](red)"
+symbol = ""
+
+[docker_context]
+format = "[](blue)[$symbol $context](bg:blue fg:base)[ ](blue)"
+symbol = ""
+
+[package]
+format = "[](maroon)[󰏔 $version](bg:maroon fg:base)[ ](maroon)"
+
+# ─── SYSTEM ────────────────────────────────────────
+[memory_usage]
+format = "[](mauve)[$symbol $ram](bg:mauve fg:base)[ ](mauve)"
+symbol = "󰍛"
+disabled = false
+threshold = 75
+
+[battery]
+format = "[](surface)[$symbol$percentage](bg:surface fg:text)[ ](surface)"
+disabled = false
+full_symbol        = "󰁹 "
+charging_symbol    = "󰂄 "
+discharging_symbol = "󰂎 "
+
+[[battery.display]]
+threshold = 20
+style = "bg:red fg:base"
+
+[jobs]
+format = "[](yellow)[$symbol $number](bg:yellow fg:base)[ ](yellow)"
+symbol = "󰒓"
+number_threshold = 1
+
+# ─── RIGHT PROMPT ──────────────────────────────────
+[status]
+format = "[](red)[$symbol $status](bg:red fg:base)[ ](red)"
+symbol = "✖"
+not_found_symbol = "󰍉"
+signal_symbol = "󱐋"
+disabled = false
+
+[cmd_duration]
+format = "[](peach)[󱎫 $duration](bg:peach fg:base)[ ](peach)"
+min_time = 500
+
+[time]
+disabled = false
+format = "[](surface)[󱑊 $time](bg:surface fg:text)[](surface)"
+time_format = "%I:%M %p"

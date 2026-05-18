@@ -1,0 +1,8 @@
+require("lua.env")
+require("lua.monitors")
+require("lua.keyboard")
+require("lua.theme")
+require("lua.animations")
+require("lua.windowrules")
+require("lua.autostart")
+require("lua.binds")

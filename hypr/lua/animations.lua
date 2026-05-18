@@ -1,0 +1,13 @@
+hl.curve("easeOutExpo", { type = "bezier", points = { {0.16, 1}, {0.3, 1} } })
+hl.curve("easeInOutQuart", { type = "bezier", points = { {0.76, 0}, {0.24, 1} } })
+hl.curve("easeOutBack", { type = "bezier", points = { {0.34, 1.3}, {0.64, 1} } })
+
+hl.animation({ leaf = "windows", enabled = true, speed = 5, bezier = "easeOutExpo" })
+hl.animation({ leaf = "windowsOut", enabled = true, speed = 4, bezier = "easeInOutQuart", style = "popin 85%" })
+hl.animation({ leaf = "windowsMove", enabled = true, speed = 5, bezier = "easeOutExpo" })
+hl.animation({ leaf = "border", enabled = true, speed = 8, bezier = "easeOutExpo" })
+hl.animation({ leaf = "borderangle", enabled = true, speed = 6, bezier = "easeInOutQuart" })
+hl.animation({ leaf = "fade", enabled = true, speed = 5, bezier = "easeOutExpo" })
+hl.animation({ leaf = "fadeOut", enabled = true, speed = 4, bezier = "easeInOutQuart" })
+hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "easeOutExpo", style = "slide" })
+hl.animation({ leaf = "specialWorkspace", enabled = true, speed = 4, bezier = "easeOutBack", style = "slidevert" })

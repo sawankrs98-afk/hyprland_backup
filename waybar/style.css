@@ -1,0 +1,291 @@
+/* =====================================================
+THEME VARIABLES & ADVANCED ML4W STYLING
+===================================================== */
+@define-color base    #0d0d11;
+@define-color crust   #11111b;
+@define-color mantle  #181825;
+@define-color text    #e4e2d4;
+@define-color accent  #AEB1B0;
+@define-color red     #81877A;
+@define-color green   #a6e3a1;
+@define-color yellow  #f9e2af;
+@define-color peach   #fab387;
+@define-color mauve   #cba6f7;
+@define-color teal    #94e2d5;
+@define-color sky     #89dceb;
+@define-color subtle  rgba(255, 255, 255, 0.08);
+@define-color bubble  rgba(30, 30, 46, 0.85);
+@define-color border  rgba(255, 255, 255, 0.12);
+@define-color shadow  rgba(0, 0, 0, 0.4);
+
+* {
+    border: none;
+    border-radius: 0;
+    font-family: "JetBrainsMono Nerd Font Propo", monospace;
+    font-size: 14px;
+    font-weight: 700;
+    min-height: 0;
+    box-shadow: none;
+    text-shadow: none;
+    transition: 200ms linear;
+}
+
+window#waybar {
+    background: transparent;
+    transition-property: background-color;
+    transition-duration: .5s;
+}
+
+.modules-left  { margin-left:  8px; }
+.modules-right { margin-right: 8px; }
+
+/* ── Specific Paddings for Containers ────────────────── */
+#custom-launch {
+    background-color: @bubble;
+    border-radius: 24px;
+    border: 1px solid @border;
+    margin: 4px 4px 4px 2px;
+    padding: 0 16px;
+    color: @accent;
+    font-size: 22px;
+}
+#custom-launch:hover {
+    background-color: rgba(137, 180, 250, 0.25);
+    border-color: @accent;
+    color: @text;
+}
+
+#cava,
+#cava.right {
+    background: @bubble;
+    border-radius: 12px;
+    border: 1px solid @border;
+    margin: 5px 4px;
+    padding: 2px 10px;
+    color: #cba6f7;
+    font-family: "JetBrainsMono Nerd Font", monospace;
+    letter-spacing: 2px;
+    font-size: 9px;
+}
+#custom-updates {
+    background-color: @bubble;
+    border-radius: 24px;
+    border: 1px solid @border;
+    margin: 4px 4px;
+    padding: 2px 12px;
+    color: @text;
+}
+#custom-updates:hover {
+    background-color: rgba(255,255,255,0.18);
+    color: @peach;
+}
+
+#window {
+    background-color: @bubble;
+    border-radius: 24px;
+    border: 1px solid @border;
+    margin: 4px 4px;
+    padding: 2px 16px;
+    color: @text;
+    font-weight: 800;
+}
+
+#workspaces {
+    background-color: @bubble;
+    border-radius: 24px;
+    border: 1px solid @border;
+    margin: 4px 2px;
+    padding: 2px 6px;
+}
+#workspaces button {
+    color: rgba(205, 214, 244, 0.4);
+    padding: 0 10px;
+    margin: 2px 2px;
+    min-width: 14px;
+    background-color: transparent;
+    border-radius: 20px;
+    transition: all 0.3s cubic-bezier(.55,-0.68,.48,1.68);
+    font-size: 16px;
+}
+#workspaces button:hover {
+    color: @text;
+    background-color: rgba(255,255,255,0.1);
+    opacity: 1;
+}
+#workspaces button.urgent {
+    color: @base;
+    background-color: @red;
+    opacity: 1;
+}
+#workspaces button.active {
+    border-radius: 20px;
+    color: @base;
+    background-color: @accent;
+    opacity: 1;
+    margin: 2px 2px;
+    padding: 0 18px;
+}
+
+#tray {
+    background-color: @bubble;
+    border-radius: 24px;
+    border: 1px solid @border;
+    margin: 4px 4px;
+    padding: 2px 14px;
+}
+#tray > .passive        { -gtk-icon-effect: dim; }
+#tray > .needs-attention{ -gtk-icon-effect: highlight; }
+
+#mpris {
+    background-color: @bubble;
+    border-radius: 24px;
+    border: 1px solid @border;
+    margin: 4px 4px;
+    color: @sky;
+    font-style: italic;
+    font-size: 14px;
+    padding: 2px 16px;
+}
+#mpris:hover {
+    color: @text;
+    background-color: rgba(137, 220, 235, 0.2);
+}
+
+/* ── THIS IS THE GUARANTEED BOX FIX FOR THE RIGHT SIDE ── */
+window#waybar .modules-right > widget > box {
+    background-color: @bubble;
+    border-radius: 24px;
+    padding: 0 6px;
+    margin: 4px 4px;
+    border: 1px solid @border;
+}
+
+/* ── All internal right modules ──────────────────────── */
+#custom-system,
+#cpu,
+#temperature,
+#memory,
+#network,
+#bluetooth,
+#power-profiles-daemon,
+#backlight,
+#pulseaudio,
+#disk,
+#battery,
+#clock,
+#custom-notification,
+#custom-power {
+    background-color: transparent;
+    padding: 2px 10px;
+    margin: 2px 0px;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+/* dividers */
+#cpu,
+#temperature,
+#memory,
+#network,
+#bluetooth,
+#power-profiles-daemon,
+#backlight,
+#pulseaudio,
+#disk,
+#battery {
+    border-right: 2px solid rgba(255,255,255,0.06);
+    border-radius: 0px;
+}
+
+/* ── Per-module colors ───────────────────────────────── */
+#custom-system          { color: @accent; font-size: 17px; }
+#custom-system:hover    { background-color: rgba(137, 180, 250, 0.15); border-radius: 12px; }
+
+#cpu                    { color: @accent; }
+#cpu.warning            { color: @yellow; }
+#cpu.critical           { color: @red; }
+#cpu:hover              { background-color: rgba(137, 180, 250, 0.15); border-radius: 12px; }
+
+#temperature            { color: @teal; }
+#temperature.critical   { color: @red; animation: blink 1s step-end infinite; }
+#temperature:hover      { background-color: rgba(148, 226, 213, 0.15); border-radius: 12px; }
+
+#memory                 { color: @mauve; }
+#memory.warning         { color: @yellow; }
+#memory.critical        { color: @red; }
+#memory:hover           { background-color: rgba(203, 166, 247, 0.15); border-radius: 12px; }
+
+#network                { color: @sky; }
+#network.disconnected   { color: rgba(205,214,244,0.3); }
+#network:hover          { background-color: rgba(137, 220, 235, 0.15); border-radius: 12px; }
+
+#bluetooth              { color: @sky; font-size: 16px; }
+#bluetooth.disabled     { color: rgba(205,214,244,0.22); }
+#bluetooth.connected    { color: @sky; }
+#bluetooth:hover        { background-color: rgba(137, 220, 235, 0.15); border-radius: 12px; }
+
+#pulseaudio             { color: @mauve; }
+#pulseaudio.muted       { color: rgba(205,214,244,0.3); }
+#pulseaudio:hover       { background-color: rgba(203, 166, 247, 0.15); border-radius: 12px; }
+
+#backlight              { color: @yellow; }
+#backlight:hover        { background-color: rgba(249, 226, 175, 0.15); border-radius: 12px; }
+
+#disk                   { color: @teal; }
+#disk:hover             { background-color: rgba(148, 226, 213, 0.15); border-radius: 12px; }
+
+#power-profiles-daemon              { color: @mauve; font-size: 17px; }
+#power-profiles-daemon.performance  { color: @red; }
+#power-profiles-daemon.balanced     { color: @mauve; }
+#power-profiles-daemon.power-saver  { color: @green; }
+#power-profiles-daemon:hover        { background-color: rgba(203, 166, 247, 0.15); border-radius: 12px; }
+
+#battery                        { color: @green; }
+#battery.good                   { color: @green; }
+#battery.warning:not(.charging) { color: @yellow; }
+#battery.critical:not(.charging){ color: @red; animation: blink 0.9s step-end infinite; }
+#battery.charging                { color: @accent; }
+#battery.plugged                 { color: @green; }
+#battery:hover                   { background-color: rgba(166, 227, 161, 0.15); border-radius: 12px; }
+
+#clock {
+    color: @text;
+    font-size: 14px;
+    font-weight: 900;
+    padding: 2px 14px;
+}
+#clock:hover { background-color: rgba(205, 214, 244, 0.15); border-radius: 12px; }
+
+#custom-notification {
+    color: @green;
+    font-size: 17px;
+    padding: 2px 12px;
+}
+#custom-notification:hover { background-color: rgba(166, 227, 161, 0.15); border-radius: 12px; }
+
+#custom-power {
+    color: @red;
+    font-size: 18px;
+    border-right: none;
+    padding-right: 12px;
+    padding-left: 10px;
+}
+#custom-power:hover {
+    background-color: rgba(243, 139, 168, 0.25);
+    border-radius: 16px;
+}
+
+@keyframes blink { 50% { opacity: 0.35; } }
+
+/* ── Tooltip ─────────────────────────────────────────── */
+tooltip {
+    background-color: rgba(17, 17, 27, 0.95);
+    border: 2px solid @accent;
+    border-radius: 16px;
+}
+tooltip label {
+    color: @text;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 700;
+}
