@@ -1,12 +1,12 @@
 /* =====================================================
 THEME VARIABLES & ADVANCED ML4W STYLING
 ===================================================== */
-@define-color base    #0d0d11;
+@define-color base    #101325;
 @define-color crust   #11111b;
 @define-color mantle  #181825;
-@define-color text    #e4e2d4;
-@define-color accent  #AEB1B0;
-@define-color red     #81877A;
+@define-color text    #e0e1f2;
+@define-color accent  #748FE2;
+@define-color red     #5561D3;
 @define-color green   #a6e3a1;
 @define-color yellow  #f9e2af;
 @define-color peach   #fab387;
@@ -55,17 +55,15 @@ window#waybar {
     color: @text;
 }
 
-#cava,
-#cava.right {
-    background: @bubble;
-    border-radius: 12px;
+/* ── Script Cava Styling ─────────────────────────────── */
+#custom-cava-left,
+#custom-cava-right {
+    background-color: @bubble;
+    border-radius: 24px;
     border: 1px solid @border;
-    margin: 5px 4px;
-    padding: 2px 10px;
-    color: #cba6f7;
-    font-family: "JetBrainsMono Nerd Font", monospace;
-    letter-spacing: 2px;
-    font-size: 9px;
+    margin: 4px 4px;
+    padding: 2px 14px;
+    color: @accent;
 }
 #custom-updates {
     background-color: @bubble;
@@ -151,7 +149,7 @@ window#waybar {
     background-color: rgba(137, 220, 235, 0.2);
 }
 
-/* ── THIS IS THE GUARANTEED BOX FIX FOR THE RIGHT SIDE ── */
+/* ── BOX FIX FOR THE RIGHT SIDE ──────────────────────── */
 window#waybar .modules-right > widget > box {
     background-color: @bubble;
     border-radius: 24px;
@@ -160,7 +158,7 @@ window#waybar .modules-right > widget > box {
     border: 1px solid @border;
 }
 
-/* ── All internal right modules ──────────────────────── */
+/* ── Structure for Right Modules ─────────────────────── */
 #custom-system,
 #cpu,
 #temperature,
@@ -172,6 +170,7 @@ window#waybar .modules-right > widget > box {
 #pulseaudio,
 #disk,
 #battery,
+#custom-weather,
 #clock,
 #custom-notification,
 #custom-power {
@@ -182,7 +181,7 @@ window#waybar .modules-right > widget > box {
     font-weight: 800;
 }
 
-/* dividers */
+/* ── Dividers ────────────────────────────────────────── */
 #cpu,
 #temperature,
 #memory,
@@ -192,76 +191,62 @@ window#waybar .modules-right > widget > box {
 #backlight,
 #pulseaudio,
 #disk,
-#battery {
+#battery,
+#custom-weather {
     border-right: 2px solid rgba(255,255,255,0.06);
     border-radius: 0px;
 }
 
-/* ── Per-module colors ───────────────────────────────── */
-#custom-system          { color: @accent; font-size: 17px; }
-#custom-system:hover    { background-color: rgba(137, 180, 250, 0.15); border-radius: 12px; }
+/* ── Jakoolit-Style Colorful Module Palette ──────────── */
+#custom-system          { color: @accent; }
+#cpu                    { color: @peach; }
+#temperature            { color: @teal; }
+#memory                 { color: @mauve; }
+#disk                   { color: @yellow; }
+#power-profiles-daemon  { color: @sky; }
+#network                { color: @green; }
+#bluetooth              { color: @sky; }
+#backlight              { color: @yellow; }
+#pulseaudio             { color: @mauve; }
+#battery                { color: @green; }
+#clock                  { color: @text; }
+#custom-notification    { color: @peach; }
 
-#cpu                    { color: @accent; }
+/* ── Hover Effects ───────────────────────────────────── */
+#custom-system:hover    { background-color: rgba(137, 180, 250, 0.15); border-radius: 12px; }
+#cpu:hover              { background-color: rgba(137, 180, 250, 0.15); border-radius: 12px; }
+#temperature:hover      { background-color: rgba(148, 226, 213, 0.15); border-radius: 12px; }
+#memory:hover           { background-color: rgba(203, 166, 247, 0.15); border-radius: 12px; }
+#network:hover          { background-color: rgba(137, 220, 235, 0.15); border-radius: 12px; }
+#bluetooth:hover        { background-color: rgba(137, 220, 235, 0.15); border-radius: 12px; }
+#pulseaudio:hover       { background-color: rgba(203, 166, 247, 0.15); border-radius: 12px; }
+#backlight:hover        { background-color: rgba(249, 226, 175, 0.15); border-radius: 12px; }
+#disk:hover             { background-color: rgba(148, 226, 213, 0.15); border-radius: 12px; }
+#power-profiles-daemon:hover { background-color: rgba(203, 166, 247, 0.15); border-radius: 12px; }
+#battery:hover          { background-color: rgba(166, 227, 161, 0.15); border-radius: 12px; }
+#clock:hover            { background-color: rgba(205, 214, 244, 0.15); border-radius: 12px; }
+#custom-notification:hover { background-color: rgba(166, 227, 161, 0.15); border-radius: 12px; }
+
+/* ── Critical Context Colors ─────────────────────────── */
 #cpu.warning            { color: @yellow; }
 #cpu.critical           { color: @red; }
-#cpu:hover              { background-color: rgba(137, 180, 250, 0.15); border-radius: 12px; }
-
-#temperature            { color: @teal; }
 #temperature.critical   { color: @red; animation: blink 1s step-end infinite; }
-#temperature:hover      { background-color: rgba(148, 226, 213, 0.15); border-radius: 12px; }
-
-#memory                 { color: @mauve; }
 #memory.warning         { color: @yellow; }
 #memory.critical        { color: @red; }
-#memory:hover           { background-color: rgba(203, 166, 247, 0.15); border-radius: 12px; }
-
-#network                { color: @sky; }
 #network.disconnected   { color: rgba(205,214,244,0.3); }
-#network:hover          { background-color: rgba(137, 220, 235, 0.15); border-radius: 12px; }
-
-#bluetooth              { color: @sky; font-size: 16px; }
 #bluetooth.disabled     { color: rgba(205,214,244,0.22); }
-#bluetooth.connected    { color: @sky; }
-#bluetooth:hover        { background-color: rgba(137, 220, 235, 0.15); border-radius: 12px; }
-
-#pulseaudio             { color: @mauve; }
 #pulseaudio.muted       { color: rgba(205,214,244,0.3); }
-#pulseaudio:hover       { background-color: rgba(203, 166, 247, 0.15); border-radius: 12px; }
-
-#backlight              { color: @yellow; }
-#backlight:hover        { background-color: rgba(249, 226, 175, 0.15); border-radius: 12px; }
-
-#disk                   { color: @teal; }
-#disk:hover             { background-color: rgba(148, 226, 213, 0.15); border-radius: 12px; }
-
-#power-profiles-daemon              { color: @mauve; font-size: 17px; }
 #power-profiles-daemon.performance  { color: @red; }
-#power-profiles-daemon.balanced     { color: @mauve; }
 #power-profiles-daemon.power-saver  { color: @green; }
-#power-profiles-daemon:hover        { background-color: rgba(203, 166, 247, 0.15); border-radius: 12px; }
 
-#battery                        { color: @green; }
 #battery.good                   { color: @green; }
 #battery.warning:not(.charging) { color: @yellow; }
 #battery.critical:not(.charging){ color: @red; animation: blink 0.9s step-end infinite; }
-#battery.charging                { color: @accent; }
-#battery.plugged                 { color: @green; }
-#battery:hover                   { background-color: rgba(166, 227, 161, 0.15); border-radius: 12px; }
+#battery.charging               { color: @accent; }
+#battery.plugged                { color: @green; }
 
-#clock {
-    color: @text;
-    font-size: 14px;
-    font-weight: 900;
-    padding: 2px 14px;
-}
-#clock:hover { background-color: rgba(205, 214, 244, 0.15); border-radius: 12px; }
-
-#custom-notification {
-    color: @green;
-    font-size: 17px;
-    padding: 2px 12px;
-}
-#custom-notification:hover { background-color: rgba(166, 227, 161, 0.15); border-radius: 12px; }
+#custom-weather          { color: @sky; }
+#custom-weather:hover    { background-color: rgba(137, 220, 235, 0.15); border-radius: 12px; }
 
 #custom-power {
     color: @red;

@@ -121,9 +121,15 @@ sed -i "s|@define-color cyan .*;|@define-color cyan   $SWAYNC_CYAN;|" "$RICE_DIR
 swaync-client -rs
 
 # ── WLOGOUT ────────────────────────────────────────────
-sed -i "s|background-color: rgba([0-9, ]*0\.90);|background-color: rgba(30, 30, 46, 0.90);|" "$RICE_DIR/wlogout/style.css"
-sed -i "s|background-color: rgba([^)]*0\.9);|background-color: $WLOGOUT_BUTTON_BG;|" "$RICE_DIR/wlogout/style.css"
-sed -i "s|border: 2px solid rgba([^)]*0\.3);|border: 2px solid $WLOGOUT_BORDER;|" "$RICE_DIR/wlogout/style.css"
+
+# ── CAVA GRADIENT ──────────────────────────────────────
+sed -i "s|gradient_color_1 = .*|gradient_color_1 = '${color1}';|" "$RICE_DIR/cava/config"
+sed -i "s|gradient_color_2 = .*|gradient_color_2 = '${color2}';|" "$RICE_DIR/cava/config"
+sed -i "s|gradient_color_3 = .*|gradient_color_3 = '${color3}';|" "$RICE_DIR/cava/config"
+sed -i "s|gradient_color_4 = .*|gradient_color_4 = '${color4}';|" "$RICE_DIR/cava/config"
+sed -i "s|gradient_color_5 = .*|gradient_color_5 = '${color5}';|" "$RICE_DIR/cava/config"
+sed -i "s|gradient_color_6 = .*|gradient_color_6 = '${color6}';|" "$RICE_DIR/cava/config"
+pkill -USR1 cava
 
 # ── HYPRLAND BORDERS ───────────────────────────────────
 (sleep 0.5 && hyprctl eval "hl.config({ general = { col = { active_border = { colors = {'$HYPR_ACTIVE_1', '$HYPR_ACTIVE_2'}, angle = 45 }, inactive_border = { colors = {'$HYPR_INACTIVE'}, angle = 0 } } } })") &

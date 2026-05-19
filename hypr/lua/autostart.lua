@@ -5,4 +5,9 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("swaync &")
     hl.dsp.exec_cmd("swww-daemon &")
     hl.exec_cmd("warp-taskbar")
+    -- Start the idle daemon
+    hl.exec_cmd("hypridle")
+
+    -- Start the authentication agent (needed for GUI root passwords)
+    hl.exec_cmd("systemctl --user start hyprpolkitagent")
 end)

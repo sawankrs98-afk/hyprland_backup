@@ -1,84 +1,356 @@
-@define-color base   #0d0d11;
-@define-color mantle #0d0d11;
-@define-color text   #e4e2d4;
-@define-color accent #AEB1B0;
-@define-color cyan   #D9C695;
+/* ═══════════════════════════════════════════════════
+   SWAYNC — ADVANCED NOTIFICATION CENTER
+   ═══════════════════════════════════════════════════ */
+
+@define-color base   #101325;
+@define-color surface    rgba(30, 30, 46, 0.90);
+@define-color overlay    rgba(49, 50, 68, 0.80);
+@define-color text   #e0e1f2;
+@define-color subtext    #a6adc8;
+@define-color accent #748FE2;
+@define-color mauve      #cba6f7;
+@define-color green      #a6e3a1;
+@define-color red        #f38ba8;
+@define-color yellow     #f9e2af;
+@define-color teal       #94e2d5;
+@define-color border     rgba(137, 180, 250, 0.20);
+@define-color border-alt rgba(255, 255, 255, 0.08);
 
 * {
-    font-family: "JetBrainsMono Nerd Font";
-    transition: all 0.2s ease;
+    font-family: "JetBrainsMono Nerd Font Propo", monospace;
+    font-weight: 700;
+    font-size: 13px;
+    transition: all 200ms ease;
 }
 
-window, .blank-window, .control-center-window {
-    background-color: transparent;
+/* ── Main Windows ─────────────────────────────────── */
+.floating-notifications {
+    background: transparent;
 }
 
+.blank-window {
+    background: transparent;
+}
+
+/* ── Control Center ───────────────────────────────── */
 .control-center {
-    background-color: @base;
-    border: 2px solid @accent;
-    border-radius: 12px;
-    padding: 10px;
+    background: @base;
+    border: 1px solid @border;
+    border-radius: 16px;
+    padding: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
+.control-center-list {
+    background: transparent;
+}
+
+.control-center-list-placeholder {
+    opacity: 0.4;
+    color: @subtext;
+}
+
+/* ── Notifications ────────────────────────────────── */
+.notification-row {
+    outline: none;
+    margin: 4px 0;
+}
+
+.control-center .notification-row:hover {
+    background: @overlay;
+    border-radius: 12px;
+}
+
+.notification {
+    background: @surface;
+    border: 1px solid @border-alt;
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin: 2px 4px;
+    color: @text;
+}
+
+.notification-default-action {
+    margin: 0;
+    padding: 4px;
+    border-radius: 10px;
+    color: @text;
+    background: transparent;
+}
+
+.notification-default-action:hover {
+    background: @overlay;
+}
+
+.notification-action {
+    border: 1px solid @border-alt;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    background: @surface;
+    color: @accent;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.notification-action:hover {
+    background: @overlay;
+    color: @text;
+}
+
+.close-button {
+    background: @red;
+    color: @base;
+    border-radius: 8px;
+    padding: 2px 6px;
+    margin: 4px 4px 0 0;
+    font-size: 11px;
+    font-weight: 900;
+    min-width: 20px;
+    min-height: 20px;
+}
+
+.close-button:hover {
+    background: #eba0ac;
+    box-shadow: 0 0 8px rgba(243, 139, 168, 0.4);
+}
+
+/* ── Notification Content ─────────────────────────── */
+.summary {
+    font-size: 13px;
+    font-weight: 900;
+    color: @text;
+    background: transparent;
+}
+
+.time {
+    font-size: 11px;
+    font-weight: 700;
+    color: @subtext;
+    background: transparent;
+    margin-right: 4px;
+}
+
+.body {
+    font-size: 12px;
+    font-weight: 700;
+    color: @subtext;
+    background: transparent;
+}
+
+.body-image {
+    margin-top: 8px;
+    border-radius: 8px;
+}
+
+/* ── Inline Reply ─────────────────────────────────── */
+.inline-reply {
+    margin-top: 8px;
+}
+
+.inline-reply-entry {
+    background: @overlay;
+    color: @text;
+    border: 1px solid @border;
+    border-radius: 8px;
+    padding: 4px 8px;
+}
+
+.inline-reply-button {
+    margin-left: 4px;
+    background: @accent;
+    color: @base;
+    border: none;
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.inline-reply-button:hover {
+    background: #b4d0fb;
+}
+
+/* ── Widget Title ─────────────────────────────────── */
 .widget-title {
-    color: @cyan;
-    font-size: 1.2rem;
-    padding: 10px;
-    margin-bottom: 5px;
+    color: @text;
+    background: @surface;
+    border: 1px solid @border-alt;
+    border-radius: 12px;
+    padding: 6px 10px;
+    margin: 4px;
+    font-size: 13px;
+    font-weight: 900;
 }
 
 .widget-title > button {
-    font-size: 0.9rem;
-    color: @text;
-    background: transparent;
-    border: 1px solid rgba(189, 147, 249, 0.3);
-    border-radius: 6px;
-    padding: 4px 10px;
+    font-size: 11px;
+    color: @subtext;
+    background: @overlay;
+    border: 1px solid @border-alt;
+    border-radius: 8px;
+    padding: 2px 8px;
 }
 
 .widget-title > button:hover {
-    background: rgba(189, 147, 249, 0.2);
-    border-color: @accent;
-    color: @cyan;
+    background: @red;
+    color: @base;
+    border-color: @red;
 }
 
+/* ── DND Toggle ───────────────────────────────────── */
 .widget-dnd {
+    background: @surface;
+    border: 1px solid @border-alt;
+    border-radius: 12px;
+    padding: 6px 10px;
+    margin: 4px;
     color: @text;
-    margin: 5px 10px 15px 10px;
+    font-size: 13px;
 }
 
 .widget-dnd > switch {
-    background: @mantle;
-    border-radius: 10px;
+    border-radius: 20px;
+    border: 2px solid @border;
+    background: @overlay;
+    min-width: 44px;
+    min-height: 22px;
 }
 
 .widget-dnd > switch:checked {
     background: @accent;
+    border-color: @accent;
 }
 
-.notification-row {
-    outline: none;
+.widget-dnd > switch slider {
+    background: @text;
+    border-radius: 20px;
+    min-width: 16px;
+    min-height: 16px;
+    margin: 2px;
 }
 
-.notification-content {
-    background: @mantle;
-    border-radius: 8px;
-    padding: 15px;
-    margin: 5px 10px;
-    border: 1px solid transparent;
+/* ── Buttons Grid ─────────────────────────────────── */
+.widget-buttons-grid {
+    background: @surface;
+    border: 1px solid @border-alt;
+    border-radius: 12px;
+    padding: 8px;
+    margin: 4px;
 }
 
-.notification-content:hover {
-    border-color: rgba(189, 147, 249, 0.4);
-}
-
-.close-button {
-    background: transparent;
+.widget-buttons-grid > flowbox > flowboxchild > button {
+    background: @overlay;
+    border: 1px solid @border-alt;
+    border-radius: 10px;
     color: @text;
-    border-radius: 5px;
+    font-size: 18px;
+    min-width: 52px;
+    min-height: 42px;
+    margin: 3px;
+    padding: 4px;
 }
 
-.close-button:hover {
-    background: #f38ba8;
+.widget-buttons-grid > flowbox > flowboxchild > button:hover {
+    background: @accent;
     color: @base;
+    border-color: @accent;
+    box-shadow: 0 0 12px rgba(137, 180, 250, 0.3);
+}
+
+/* ── MPRIS ────────────────────────────────────────── */
+.widget-mpris {
+    background: @surface;
+    border: 1px solid @border-alt;
+    border-radius: 12px;
+    padding: 8px;
+    margin: 4px;
+    color: @text;
+}
+
+.widget-mpris-player {
+    padding: 4px 8px;
+}
+
+.widget-mpris-title {
+    font-size: 14px;
+    font-weight: 900;
+    color: @text;
+}
+
+.widget-mpris-subtitle {
+    font-size: 12px;
+    color: @subtext;
+}
+
+.widget-mpris > box > button {
+    background: @overlay;
+    border: 1px solid @border-alt;
+    border-radius: 10px;
+    color: @accent;
+    padding: 4px 12px;
+    font-size: 16px;
+}
+
+.widget-mpris > box > button:hover {
+    background: @accent;
+    color: @base;
+}
+
+/* ── Volume ───────────────────────────────────────── */
+.widget-volume {
+    background: @surface;
+    border: 1px solid @border-alt;
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin: 4px;
+    color: @mauve;
+    font-size: 16px;
+}
+
+.widget-volume > box > button {
+    background: transparent;
+    border: none;
+    color: @mauve;
+    font-size: 18px;
+    padding: 0 6px;
+}
+
+.per-app-volume {
+    background: @overlay;
+    border-radius: 8px;
+    padding: 4px 8px;
+    margin: 2px 0;
+    color: @subtext;
+    font-size: 12px;
+}
+
+/* ── Backlight ────────────────────────────────────── */
+.widget-backlight {
+    background: @surface;
+    border: 1px solid @border-alt;
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin: 4px;
+    color: @yellow;
+    font-size: 16px;
+}
+
+/* ── Sliders (Volume + Backlight) ─────────────────── */
+scale trough {
+    background: @overlay;
+    border-radius: 10px;
+    min-height: 6px;
+}
+
+scale trough highlight {
+    background: @accent;
+    border-radius: 10px;
+}
+
+scale slider {
+    background: @text;
+    border-radius: 50%;
+    min-width: 14px;
+    min-height: 14px;
+    box-shadow: 0 0 6px rgba(137, 180, 250, 0.4);
 }

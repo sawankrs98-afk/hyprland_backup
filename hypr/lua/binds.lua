@@ -68,4 +68,9 @@ hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 hl.bind(mainMod .. "+ A", function() os.execute("bash ~/hyprland_backup/scripts/animation-switcher.sh &") end)
 
-hl.bind(mainMod .. "+ L", function() os.execute("bash ~/hyprland_backup/scripts/layout_switcher.sh &") end)
+hl.bind(mainMod .. "+ O", function() os.execute("bash ~/hyprland_backup/scripts/layout_switcher.sh &") end)
+-- Lock screen instantly with Super + L
+hl.bind("SUPER + L", hl.dsp.exec_cmd("loginctl lock-session"))
+
+-- Trigger hyprshutdown with Super + X 
+hl.bind("SUPER + X", hl.dsp.exec_cmd("hyprshutdown"))
