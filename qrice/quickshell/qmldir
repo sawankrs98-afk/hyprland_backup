@@ -1,0 +1,6 @@
+singleton Globals 1.0 Globals.qml
+singleton Theme 1.0 Theme.qml
+
+singleton AudioService 1.0 services/AudioService.qml
+singleton BatteryService 1.0 services/BatteryService.qml
+singleton MediaService 1.0 services/MediaService.qml

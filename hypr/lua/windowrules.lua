@@ -81,3 +81,17 @@ hl.layer_rule({
     --border_size = 0,
     --rounding = 0,
 --})
+
+hl.layer_rule({
+    name = "qs-popups-flat",
+    match = { namespace = "^(qs_status)$" },
+    blur = false,
+    ignore_alpha = 0.0
+})
+
+hl.layer_rule({
+    name = "qs-calendar-flat",
+    match = { namespace = "^(qs_calendar)$" },
+    blur = false,
+    ignore_alpha = 0.0
+})

@@ -1,12 +1,12 @@
 /* =====================================================
 THEME VARIABLES & ADVANCED ML4W STYLING
 ===================================================== */
-@define-color base    #101325;
+@define-color base    #06120D;
 @define-color crust   #11111b;
 @define-color mantle  #181825;
-@define-color text    #e0e1f2;
-@define-color accent  #748FE2;
-@define-color red     #5561D3;
+@define-color text    #c1c0bb;
+@define-color accent  #7D817A;
+@define-color red     #61655B;
 @define-color green   #a6e3a1;
 @define-color yellow  #f9e2af;
 @define-color peach   #fab387;

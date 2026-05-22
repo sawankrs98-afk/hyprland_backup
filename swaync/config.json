@@ -29,8 +29,6 @@
   "hide-on-action": true,
   "script-fail-notify": true,
   "widgets": [
-    "buttons-grid",
-    "mpris",
     "volume",
     "backlight",
     "dnd",
