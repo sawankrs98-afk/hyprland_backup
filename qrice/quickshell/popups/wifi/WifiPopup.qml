@@ -9,15 +9,9 @@ import "../../"
 Item {
     id: wifiRoot
 
-    // ==========================================
-    // SECTION 11: END-4 PROPORTIONS & DIMENSIONS
-    // ==========================================
     implicitWidth: 540
     implicitHeight: 740
 
-    // ==========================================
-    // STATE PROPERTIES
-    // ==========================================
     property string activeSSID: "Not Connected"
     property string activeIP: "Fetching..."
     property string activeFreq: "--"
@@ -42,15 +36,9 @@ Item {
     property bool showSavedNetworks: false
     property bool isScanning: false
 
-    // ==========================================
-    // GLOBAL UI ANIMATIONS
-    // ==========================================
-    Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutQuint } }
-    Behavior on height { NumberAnimation { duration: 300; easing.type: Easing.OutQuint } }
+    Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutQuint } }
+    Behavior on height { NumberAnimation { duration: 250; easing.type: Easing.OutQuint } }
 
-    // ==========================================
-    // CORE LOGIC FUNCTIONS
-    // ==========================================
     function refreshAll() {
         isScanning = true
         activeNetProc.running = true
@@ -63,10 +51,10 @@ Item {
 
     function signalColor(sig) {
         let s = parseInt(sig)
-        if (s >= 75) return Theme.green
-        if (s >= 50) return Theme.yellow
-        if (s >= 25) return Theme.peach
-        return Theme.red
+        if (s >= 75) return Theme.accent
+        if (s >= 50) return Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.8)
+        if (s >= 25) return Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.6)
+        return Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.4)
     }
 
     function signalIcon(sig) {
@@ -82,11 +70,8 @@ Item {
         refreshAll()
     }
 
-    // ==========================================
-    // BACKEND DAEMONS (STRICTLY SANITIZED STRINGS)
-    // ==========================================
+    // ── UNTOUCHED NETWORK LOGIC BLOCKS ────────────────────────────────────────
 
-    // Hardware Power State
     Process {
         id: powerProc
         command: ["sh", "-c", "nmcli radio wifi"]
@@ -97,7 +82,6 @@ Item {
         }
     }
 
-    // Active Network Diagnostics (SSID, Signal, Security, Freq, BSSID, IP)
     Process {
         id: activeNetProc
         command: ["sh", "-c", "nmcli -t -f ACTIVE,SSID,SIGNAL,SECURITY,FREQ,BSSID dev wifi | grep '^yes:' | head -n1; ip -4 -o addr show dev $(ip route | awk '/default/ {print $5}' | head -n1) 2>/dev/null | awk '{print $4}' | cut -d/ -f1"]
@@ -111,7 +95,6 @@ Item {
                     wifiRoot.activeSignal = parseInt(p[2]) || 0
                     wifiRoot.activeSecurity = p[3] || "Open"
                     wifiRoot.activeFreq = p[4] || "2.4 GHz"
-                    // Reconstruct BSSID from remaining colon splits
                     wifiRoot.activeBSSID = p.slice(5).join(":") || "--"
                     
                     if (lines.length > 1) {
@@ -130,7 +113,6 @@ Item {
         }
     }
 
-    // Network Ping Telemetry
     Process {
         id: pingProc
         command: ["sh", "-c", "ping -c 1 8.8.8.8 | awk -F'/' 'END{print $5}' || echo '--'"]
@@ -142,7 +124,6 @@ Item {
         }
     }
 
-    // Saved Profiles Fetcher
     Process {
         id: savedProc
         command: ["sh", "-c", "nmcli -t -f NAME,TYPE connection show | grep '802-11-wireless' | cut -d: -f1"]
@@ -160,7 +141,6 @@ Item {
         }
     }
 
-    // Nearby Networks Scanner & Filter
     Process {
         id: nearbyProc
         command: ["sh", "-c", "nmcli -t -f IN-USE,SSID,SIGNAL,SECURITY dev wifi list"]
@@ -183,7 +163,6 @@ Item {
                     })
                 }
 
-                // Section 5: Sort Strongest First
                 arr.sort((a, b) => b.signal - a.signal)
                 wifiRoot.nearbyNetworks = arr
                 wifiRoot.isScanning = false
@@ -191,7 +170,6 @@ Item {
         }
     }
 
-    // Hardware Speed Telemetry
     Process {
         id: speedProc
         command: ["sh", "-c", "iface=$(ip route | awk '/default/ {print $5}' | head -n1); rx=$(cat /sys/class/net/$iface/statistics/rx_bytes 2>/dev/null || echo 0); tx=$(cat /sys/class/net/$iface/statistics/tx_bytes 2>/dev/null || echo 0); echo \"$rx:$tx\""]
@@ -216,7 +194,6 @@ Item {
         }
     }
 
-    // Auto-Sync Timer
     Timer {
         interval: 5000
         running: Globals.wifiOpen
@@ -225,64 +202,71 @@ Item {
         onTriggered: refreshAll()
     }
 
-    // ==========================================
-    // MAIN UI ARCHITECTURE
-    // ==========================================
+    // ── UI REDESIGN: MATERIAL YOU / ANDROID 15 ─────────────────────────────────
+
     Rectangle {
         anchors.fill: parent
-        radius: 20
+        radius: 24
         color: Theme.surface
-        border.color: Theme.borderColor
+        border.color: Qt.rgba(Theme.borderColor.r, Theme.borderColor.g, Theme.borderColor.b, 0.4)
         border.width: 1
         clip: true
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 20
-            spacing: 16
+            anchors.margins: 24
+            spacing: 20
 
-            // ── SECTION 1: PREMIUM HEADER ──
+            // ── TOP HEADER & SWITCH ──
             RowLayout {
                 Layout.fillWidth: true
+                spacing: 16
+
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 4
+                    spacing: 2
                     Text { 
-                        text: "Network Center"
+                        text: "Wi-Fi"
                         color: Theme.text
                         font.family: Theme.fontFamily
-                        font.pixelSize: 26
-                        font.weight: Font.Black 
+                        font.pixelSize: 28
+                        font.weight: Font.Bold 
                     }
                     Text { 
-                        text: wifiRoot.isConnected ? "Securely connected to routing node" : "Wireless interface offline or disconnected"
-                        color: wifiRoot.isConnected ? Theme.muted : Theme.red
+                        text: wifiRoot.wifiPowered ? (wifiRoot.isConnected ? "Connected to network" : "Available networks") : "Wi-Fi is turned off"
+                        color: Theme.subtext
                         font.family: Theme.fontFamily
-                        font.pixelSize: 13 
+                        font.pixelSize: 15
                     }
                 }
-                
-                // Animated Hardware Power Switch
+
+                // Material Toggle Switch
                 Rectangle {
-                    width: 58
-                    height: 32
-                    radius: 16
-                    color: wifiRoot.wifiPowered ? Qt.rgba(Theme.blue.r, Theme.blue.g, Theme.blue.b, 0.2) : Theme.overlay
-                    border.color: wifiRoot.wifiPowered ? Theme.blue : Theme.borderColor
-                    border.width: 1
-                    
-                    Behavior on color { ColorAnimation { duration: 250 } }
-                    
-                    Text {
-                        anchors.centerIn: parent
-                        text: wifiRoot.wifiPowered ? "ON" : "OFF"
-                        color: wifiRoot.wifiPowered ? Theme.blue : Theme.muted
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 12
-                        font.weight: Font.Bold
+                    id: toggleSwitch
+                    width: 52
+                    height: 28
+                    radius: 14
+                    color: wifiRoot.wifiPowered ? Theme.accent : Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.1)
+                    Behavior on color { ColorAnimation { duration: 200 } }
+
+                    scale: toggleMa.pressed ? 0.92 : (toggleMa.containsMouse ? 1.05 : 1.0)
+                    Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+
+                    Rectangle {
+                        width: 20
+                        height: 20
+                        radius: 10
+                        color: wifiRoot.wifiPowered ? Theme.base : Theme.text
+                        anchors.verticalCenter: parent.verticalCenter
+                        x: wifiRoot.wifiPowered ? parent.width - width - 4 : 4
+                        Behavior on x { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+                        Behavior on color { ColorAnimation { duration: 200 } }
                     }
+
                     MouseArea {
+                        id: toggleMa
                         anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             Quickshell.execDetached(["nmcli", "radio", "wifi", wifiRoot.wifiPowered ? "off" : "on"])
@@ -292,422 +276,315 @@ Item {
                 }
             }
 
-            // ── SCROLLVIEW WITH RIGID COLUMN FIX (NO SQUISHING) ──
-            ScrollView {
-                id: listScroll
+            // ── CONNECTED HERO CARD ──
+            Rectangle {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
-                clip: true
-                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                ScrollBar.vertical.policy: ScrollBar.AsNeeded
+                implicitHeight: heroLayout.implicitHeight + 32 // Dynamically fits content
+                radius: 20
+                color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.12)
+                visible: wifiRoot.wifiPowered && wifiRoot.isConnected
 
-                // Using Column ensures child items maintain their strict Heights
-                Column {
-                    width: listScroll.width
-                    spacing: 16
-                    padding: 2
+                ColumnLayout {
+                    id: heroLayout
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.margins: 16
+                    spacing: 12
 
-                    // ── SECTION 2: HERO CONNECTED CARD ──
-                    Rectangle {
-                        width: parent.width - 4
-                        height: 250 // Hard boundary guarantees no internal overlap
-                        radius: 18
-                        color: Theme.overlay
-                        border.color: Theme.borderColor
-                        border.width: 1
-                        visible: wifiRoot.wifiPowered
+                    // Network Info Row
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 16
+
+                        Text {
+                            text: signalIcon(wifiRoot.activeSignal)
+                            color: Theme.accent
+                            font.pixelSize: 28
+                            font.family: Theme.fontFamily
+                        }
 
                         ColumnLayout {
-                            anchors.fill: parent
-                            anchors.margins: 16
-                            spacing: 12
-
-                            RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+                            Text { 
+                                text: wifiRoot.activeSSID
+                                color: Theme.text
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 15
+                                font.weight: Font.Bold
+                                elide: Text.ElideRight
                                 Layout.fillWidth: true
-                                spacing: 16
-
-                                // Status Icon Base
-                                Rectangle {
-                                    width: 72; height: 72; radius: 36
-                                    color: wifiRoot.isConnected ? Qt.rgba(Theme.blue.r, Theme.blue.g, Theme.blue.b, 0.1) : Qt.rgba(Theme.muted.r, Theme.muted.g, Theme.muted.b, 0.1)
-                                    border.color: wifiRoot.isConnected ? Qt.rgba(Theme.blue.r, Theme.blue.g, Theme.blue.b, 0.3) : "transparent"
-                                    border.width: 1
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: wifiRoot.isConnected ? signalIcon(wifiRoot.activeSignal) : "󰤮"
-                                        color: wifiRoot.isConnected ? signalColor(wifiRoot.activeSignal) : Theme.muted
-                                        font.family: Theme.fontFamily
-                                        font.pixelSize: 42
-                                        Behavior on color { ColorAnimation { duration: 250 } }
-                                    }
-                                }
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    Layout.alignment: Qt.AlignVCenter
-
-                                    Text {
-                                        text: wifiRoot.activeSSID
-                                        color: Theme.text
-                                        font.family: Theme.fontFamily
-                                        font.pixelSize: 22
-                                        font.weight: Font.Black
-                                        elide: Text.ElideRight
-                                        Layout.fillWidth: true
-                                    }
-
-                                    // Dynamic Badge Array (Section 9)
-                                    RowLayout {
-                                        spacing: 8
-                                        Rectangle {
-                                            height: 24
-                                            implicitWidth: statusTextBadge.implicitWidth + 24
-                                            radius: 12
-                                            color: wifiRoot.isConnected ? Qt.rgba(Theme.green.r, Theme.green.g, Theme.green.b, 0.15) : Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.15)
-                                            border.color: wifiRoot.isConnected ? Theme.green : Theme.red
-                                            border.width: 1
-                                            Text { id: statusTextBadge; anchors.centerIn: parent; text: wifiRoot.isConnected ? "Connected" : "Disconnected"; color: wifiRoot.isConnected ? Theme.green : Theme.red; font.pixelSize: 11; font.weight: Font.Bold }
-                                        }
-                                        Rectangle {
-                                            visible: wifiRoot.isConnected
-                                            height: 24
-                                            implicitWidth: freqTextBadge.implicitWidth + 24
-                                            radius: 12
-                                            color: Qt.rgba(Theme.mauve.r, Theme.mauve.g, Theme.mauve.b, 0.15)
-                                            border.color: Theme.mauve
-                                            border.width: 1
-                                            Text { id: freqTextBadge; anchors.centerIn: parent; text: wifiRoot.activeFreq; color: Theme.mauve; font.pixelSize: 11; font.weight: Font.Bold }
-                                        }
-                                    }
-                                }
                             }
-
-                            // Diagnostics Grid
-                            GridLayout {
-                                Layout.fillWidth: true
-                                columns: 2
-                                rowSpacing: 10
-                                columnSpacing: 16
-                                visible: wifiRoot.isConnected
-                                Layout.topMargin: 4
-
-                                RowLayout { Layout.fillWidth: true; Text { text: "IP Address:"; color: Theme.subtext; font.pixelSize: 11; font.weight: Font.Bold } Item { Layout.fillWidth: true } Text { text: wifiRoot.activeIP; color: Theme.text; font.pixelSize: 11 } }
-                                RowLayout { Layout.fillWidth: true; Text { text: "Signal Level:"; color: Theme.subtext; font.pixelSize: 11; font.weight: Font.Bold } Item { Layout.fillWidth: true } Text { text: wifiRoot.activeSignal + "%"; color: Theme.text; font.pixelSize: 11 } }
-                                RowLayout { Layout.fillWidth: true; Text { text: "Security:"; color: Theme.subtext; font.pixelSize: 11; font.weight: Font.Bold } Item { Layout.fillWidth: true } Text { text: wifiRoot.activeSecurity; color: Theme.text; font.pixelSize: 11 } }
-                                RowLayout { Layout.fillWidth: true; Text { text: "Latency (Ping):"; color: Theme.subtext; font.pixelSize: 11; font.weight: Font.Bold } Item { Layout.fillWidth: true } Text { text: wifiRoot.activePing; color: Theme.text; font.pixelSize: 11 } }
+                            Text { 
+                                text: wifiRoot.activeSecurity
+                                color: Theme.subtext
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 12 
                             }
+                        }
 
-                            Item { Layout.fillHeight: true }
-
-                            // Action Row
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 12
-                                visible: wifiRoot.isConnected
-                                
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    height: 38
-                                    radius: 10
-                                    color: Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.15)
-                                    border.color: Theme.red
-                                    border.width: 1
-                                    
-                                    Text { anchors.centerIn: parent; text: "Disconnect"; color: Theme.red; font.pixelSize: 12; font.weight: Font.Bold }
-                                    MouseArea { 
-                                        anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                                        onClicked: { Quickshell.execDetached(["nmcli", "device", "disconnect", "wlan0"]); refreshAll() }
-                                        onPressed: parent.scale = 0.95
-                                        onReleased: parent.scale = 1.0
-                                    }
-                                    Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
-                                }
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    height: 38
-                                    radius: 10
-                                    color: Theme.surface
-                                    border.color: Theme.borderColor
-                                    border.width: 1
-
-                                    Text { anchors.centerIn: parent; text: "Forget Network"; color: Theme.text; font.pixelSize: 12; font.weight: Font.Bold }
-                                    MouseArea { 
-                                        anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                                        onClicked: { Quickshell.execDetached(["nmcli", "connection", "delete", wifiRoot.activeSSID]); refreshAll() }
-                                        onPressed: parent.scale = 0.95
-                                        onReleased: parent.scale = 1.0
-                                    }
-                                    Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
-                                }
+                        // Connected Pill
+                        Rectangle {
+                            height: 26
+                            implicitWidth: connectedText.implicitWidth + 24
+                            radius: 13
+                            color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.2)
+                            Text { 
+                                id: connectedText
+                                anchors.centerIn: parent
+                                text: "Connected"
+                                color: Theme.accent
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 12
+                                font.weight: Font.Bold 
                             }
                         }
                     }
 
+                    // Action Buttons Row
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
 
-                    // ── SECTION 8: SETTINGS & PREFERENCES CARD ──
-                    Rectangle {
-                        width: parent.width - 4
-                        height: 60
-                        radius: 14
-                        color: Theme.overlay
-                        border.color: Theme.borderColor
-                        border.width: 1
+                        // Disconnect Button
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 36
+                            radius: 18
+                            color: disconnectMa.containsMouse ? Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.1) : "transparent"
+                            border.color: Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.2)
+                            border.width: 1
 
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.leftMargin: 16
-                            anchors.rightMargin: 16
+                            scale: disconnectMa.pressed ? 0.98 : (disconnectMa.containsMouse ? 1.02 : 1.0)
+                            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                            Behavior on color { ColorAnimation { duration: 150 } }
 
-                            Text { text: "Show Speed In Bar"; color: Theme.text; font.pixelSize: 13; font.weight: Font.Bold; Layout.fillWidth: true }
-                            Switch {
-                                checked: Globals.showWifiSpeed
-                                onToggled: Globals.showWifiSpeed = checked
+                            Text { 
+                                anchors.centerIn: parent
+                                text: "Disconnect"
+                                color: Theme.text
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 13
+                                font.weight: Font.Medium 
+                            }
+                            MouseArea { 
+                                id: disconnectMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: { Quickshell.execDetached(["nmcli", "device", "disconnect", "wlan0"]); refreshAll() }
                             }
                         }
-                    }
 
+                        // Forget Button
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 36
+                            radius: 18
+                            color: forgetMa.containsMouse ? Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.1) : "transparent"
+                            border.color: Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.2)
+                            border.width: 1
 
-                    // ── SECTION 5: NEARBY NETWORKS LIST ──
-                    Column {
-                        width: parent.width - 4
-                        spacing: 10
-                        visible: !wifiRoot.showSavedNetworks && wifiRoot.wifiPowered
+                            scale: forgetMa.pressed ? 0.98 : (forgetMa.containsMouse ? 1.02 : 1.0)
+                            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                            Behavior on color { ColorAnimation { duration: 150 } }
 
-                        RowLayout {
-                            width: parent.width
-                            height: 24
-                            Text { text: "Discovered Networks"; color: Theme.text; font.pixelSize: 12; font.weight: Font.Bold; Layout.leftMargin: 4 }
-                            Item { Layout.fillWidth: true }
-                            Text { text: wifiRoot.nearbyNetworks.length + " found"; color: Theme.muted; font.pixelSize: 11; font.weight: Font.Bold; Layout.rightMargin: 4 }
-                        }
-
-                        Repeater {
-                            model: wifiRoot.nearbyNetworks
-
-                            delegate: Rectangle {
-                                width: parent.width
-                                height: 80
-                                radius: 14
-
-                                color: nearbyRowHover.containsMouse ? Theme.overlay : Qt.rgba(1,1,1,0.02)
-                                border.color: Theme.borderColor
-                                border.width: 1
-                                
-                                Behavior on color { ColorAnimation { duration: 150 } }
-                                scale: nearbyRowHover.containsMouse ? 1.01 : 1.0
-                                Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
-
-                                RowLayout {
-                                    anchors.fill: parent
-                                    anchors.leftMargin: 16
-                                    anchors.rightMargin: 16
-                                    spacing: 16
-
-                                    ColumnLayout {
-                                        spacing: 2
-                                        Text { text: signalIcon(modelData.signal); color: signalColor(modelData.signal); font.pixelSize: 22; Layout.alignment: Qt.AlignHCenter }
-                                        Text { text: modelData.signal + "%"; color: Theme.muted; font.pixelSize: 10; font.weight: Font.Bold; Layout.alignment: Qt.AlignHCenter }
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        spacing: 4
-                                        Text { text: modelData.ssid; color: Theme.text; font.pixelSize: 15; font.weight: Font.Bold; elide: Text.ElideRight; Layout.fillWidth: true }
-                                        RowLayout {
-                                            spacing: 6
-                                            Text { text: modelData.secure ? "󰌾 Secured" : "󰧵 Open"; color: Theme.muted; font.pixelSize: 11 }
-                                        }
-                                    }
-
-                                    Rectangle {
-                                        width: 86
-                                        height: 34
-                                        radius: 8
-                                        color: Qt.rgba(Theme.blue.r, Theme.blue.g, Theme.blue.b, 0.15)
-                                        border.color: Theme.blue
-                                        border.width: 1
-                                        visible: nearbyRowHover.containsMouse
-
-                                        Text { anchors.centerIn: parent; text: "Connect"; color: Theme.blue; font.pixelSize: 11; font.weight: Font.Bold }
-
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: {
-                                                if (modelData.secure) {
-                                                    wifiRoot.targetSSID = modelData.ssid
-                                                    wifiRoot.targetPassword = ""
-                                                } else {
-                                                    Quickshell.execDetached(["nmcli", "device", "wifi", "connect", modelData.ssid])
-                                                    refreshAll()
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: nearbyRowHover
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    propagateComposedEvents: true
-                                }
+                            Text { 
+                                anchors.centerIn: parent
+                                text: "Forget"
+                                color: Theme.text
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 13
+                                font.weight: Font.Medium 
                             }
-                        }
-                    }
-
-                    // ── SECTION 4: SAVED NETWORKS LIST ──
-                    Column {
-                        width: parent.width - 4
-                        spacing: 10
-                        visible: wifiRoot.showSavedNetworks && wifiRoot.wifiPowered
-
-                        RowLayout {
-                            width: parent.width
-                            height: 24
-                            Text { text: "Stored Profiles"; color: Theme.text; font.pixelSize: 12; font.weight: Font.Bold; Layout.leftMargin: 4 }
-                            Item { Layout.fillWidth: true }
-                            Text { text: wifiRoot.savedNetworks.length + " profiles"; color: Theme.muted; font.pixelSize: 11; font.weight: Font.Bold; Layout.rightMargin: 4 }
-                        }
-
-                        Repeater {
-                            model: wifiRoot.savedNetworks
-
-                            delegate: Rectangle {
-                                width: parent.width
-                                height: 68
-                                radius: 14
-
-                                color: savedRowHover.containsMouse ? Theme.overlay : Qt.rgba(1,1,1,0.02)
-                                border.color: Theme.borderColor
-                                border.width: 1
-                                
-                                Behavior on color { ColorAnimation { duration: 150 } }
-                                scale: savedRowHover.containsMouse ? 1.01 : 1.0
-                                Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
-
-                                RowLayout {
-                                    anchors.fill: parent
-                                    anchors.leftMargin: 16
-                                    anchors.rightMargin: 16
-                                    spacing: 16
-
-                                    Text { text: "󰤨"; color: Theme.blue; font.pixelSize: 22 }
-
-                                    Text {
-                                        text: modelData.ssid
-                                        color: Theme.text
-                                        font.pixelSize: 15
-                                        font.weight: Font.Bold
-                                        Layout.fillWidth: true
-                                        elide: Text.ElideRight
-                                    }
-
-                                    RowLayout {
-                                        spacing: 10
-                                        visible: savedRowHover.containsMouse
-
-                                        Rectangle {
-                                            width: 80; height: 34; radius: 8
-                                            color: Theme.surface; border.color: Theme.borderColor; border.width: 1
-                                            Text { anchors.centerIn: parent; text: "Forget"; color: Theme.text; font.pixelSize: 11; font.weight: Font.Bold }
-                                            MouseArea {
-                                                anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                                                onClicked: { Quickshell.execDetached(["nmcli", "connection", "delete", modelData.ssid]); refreshAll() }
-                                            }
-                                        }
-
-                                        Rectangle {
-                                            width: 90; height: 34; radius: 8
-                                            color: Qt.rgba(Theme.blue.r, Theme.blue.g, Theme.blue.b, 0.15); border.color: Theme.blue; border.width: 1
-                                            Text { anchors.centerIn: parent; text: "Connect"; color: Theme.blue; font.pixelSize: 11; font.weight: Font.Bold }
-                                            MouseArea {
-                                                anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                                                onClicked: { Quickshell.execDetached(["nmcli", "connection", "up", "id", modelData.ssid]); refreshAll() }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: savedRowHover
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    propagateComposedEvents: true
-                                }
+                            MouseArea { 
+                                id: forgetMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: { Quickshell.execDetached(["nmcli", "connection", "delete", wifiRoot.activeSSID]); refreshAll() }
                             }
                         }
                     }
                 }
             }
 
-            // ── SECTION 7: BOTTOM ACTIONS ROW ──
-            RowLayout {
+            // ── NETWORK LIST ──
+            ScrollView {
                 Layout.fillWidth: true
-                spacing: 12
-                
-                Rectangle {
-                    Layout.fillWidth: true; height: 48; radius: 12
-                    color: Theme.overlay; border.color: Theme.borderColor; border.width: 1
-                    
-                    RowLayout {
-                        anchors.centerIn: parent; spacing: 10
-                        Text {
-                            text: "󰑐"; color: Theme.text; font.pixelSize: 16
-                            RotationAnimator on rotation { running: wifiRoot.isScanning; from: 0; to: 360; duration: 800; loops: Animation.Infinite }
+                Layout.fillHeight: true
+                clip: true
+                contentWidth: availableWidth
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                ScrollBar.vertical.policy: ScrollBar.AsNeeded
+                visible: wifiRoot.wifiPowered
+
+                Column {
+                    width: parent.width
+                    spacing: 8
+
+                    Repeater {
+                        model: wifiRoot.nearbyNetworks
+
+                        delegate: Rectangle {
+                            width:parent.width
+                            height: 64
+                            radius: 16
+                            color: rowMa.containsMouse ? Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.06) : "transparent"
+                            
+                            scale: rowMa.pressed ? 0.98 : (rowMa.containsMouse ? 1.02 : 1.0)
+                            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                            Behavior on color { ColorAnimation { duration: 150 } }
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 16
+                                anchors.rightMargin: 16
+                                spacing: 16
+
+                                Text {
+                                    text: signalIcon(modelData.signal)
+                                    color: signalColor(modelData.signal)
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: 22
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+                                    Text { 
+                                        text: modelData.ssid
+                                        color: Theme.text
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 15
+                                        font.weight: Font.Medium
+                                        elide: Text.ElideRight
+                                        Layout.fillWidth: true
+                                    }
+                                    Text { 
+                                        text: modelData.secure ? "Secured · Tap to connect" : "Open network · Tap to connect"
+                                        color: Theme.subtext
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 12 
+                                    }
+                                }
+                                
+                                // Lock icon indicator for secured networks
+                                Text {
+                                    visible: modelData.secure
+                                    text: "󰌾"
+                                    color: Theme.subtext
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: 14
+                                }
+                            }
+
+                            MouseArea {
+                                id: rowMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (modelData.secure) {
+                                        wifiRoot.targetSSID = modelData.ssid
+                                        wifiRoot.targetPassword = ""
+                                    } else {
+                                        Quickshell.execDetached(["nmcli", "device", "wifi", "connect", modelData.ssid])
+                                        refreshAll()
+                                    }
+                                }
+                            }
                         }
-                        Text { text: "Refresh Layout"; color: Theme.text; font.pixelSize: 13; font.weight: Font.Bold }
                     }
 
-                    MouseArea {
-                        anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                        onClicked: refreshAll()
-                        onPressed: parent.scale = 0.95
-                        onReleased: parent.scale = 1.0
+                    // Saved Networks Spacer / Header
+                    Item { Layout.preferredHeight: 12; visible: wifiRoot.savedNetworks.length > 0 }
+                    Text {
+                        text: "Saved Networks"
+                        color: Theme.subtext
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 13
+                        font.weight: Font.Bold
+                        Layout.leftMargin: 16
+                        visible: wifiRoot.savedNetworks.length > 0
                     }
-                    Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
-                }
+                    Item { Layout.preferredHeight: 4; visible: wifiRoot.savedNetworks.length > 0 }
 
-                Rectangle {
-                    Layout.fillWidth: true; height: 48; radius: 12
-                    color: networkManagerMouse.containsMouse ? Qt.rgba(Theme.blue.r, Theme.blue.g, Theme.blue.b, 0.20) : Theme.overlay
-                    border.color: Theme.blue; border.width: 1
-                    
-                    Behavior on color { ColorAnimation { duration: 150 } }
+                    Repeater {
+                        model: wifiRoot.savedNetworks
 
-                    RowLayout {
-                        anchors.centerIn: parent; spacing: 10
-                        Text { text: "󰛳"; color: Theme.blue; font.pixelSize: 16 }
-                        Text { text: "Network Settings"; color: Theme.blue; font.pixelSize: 13; font.weight: Font.Bold }
+                        delegate: Rectangle {
+                            width:parent.width
+                            height: 64
+                            radius: 16
+                            color: savedRowMa.containsMouse ? Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.06) : "transparent"
+                            
+                            scale: savedRowMa.pressed ? 0.98 : (savedRowMa.containsMouse ? 1.02 : 1.0)
+                            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                            Behavior on color { ColorAnimation { duration: 150 } }
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 16
+                                anchors.rightMargin: 16
+                                spacing: 16
+
+                                Text {
+                                    text: "󰤨"
+                                    color: Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.4)
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: 22
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+                                    Text { 
+                                        text: modelData.ssid
+                                        color: Theme.text
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 15
+                                        font.weight: Font.Medium
+                                        elide: Text.ElideRight
+                                        Layout.fillWidth: true
+                                    }
+                                    Text { 
+                                        text: "Saved network · Tap to connect"
+                                        color: Theme.subtext
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 12 
+                                    }
+                                }
+                            }
+
+                            MouseArea {
+                                id: savedRowMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    Quickshell.execDetached(["nmcli", "connection", "up", "id", modelData.ssid])
+                                    refreshAll()
+                                }
+                            }
+                        }
                     }
-
-                    MouseArea {
-                        id: networkManagerMouse
-                        anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                        onClicked: { Globals.wifiOpen = false; Quickshell.execDetached(["kitty", "-e", "nmtui"]) }
-                        onPressed: parent.scale = 0.95
-                        onReleased: parent.scale = 1.0
-                    }
-                    Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
                 }
             }
         }
     }
 
-    // ==========================================
-    // SECTION 6: ABSOLUTE PASSWORD MODAL
-    // ==========================================
-    // Escapes the layout flow entirely. z: 9999 guarantees it sits above everything.
+    // ── PASSWORD MODAL OVERLAY (DYNAMIC HEIGHT FIX) ──────────────────────────
+
     Rectangle {
         id: passwordModalOverlay
         anchors.fill: parent
-        color: Qt.rgba(Theme.base.r, Theme.base.g, Theme.base.b, 0.85) // Deep blur/dim effect
+        radius: 24
+        color: Qt.rgba(Theme.base.r, Theme.base.g, Theme.base.b, 0.85)
         visible: wifiRoot.targetSSID.length > 0
         z: 9999 
 
-        // Intercept all stray clicks so they don't pass through to the lists
         MouseArea { 
             anchors.fill: parent
             hoverEnabled: true 
@@ -717,46 +594,50 @@ Item {
         Rectangle {
             anchors.centerIn: parent
             width: parent.width - 64
-            height: 200
-            radius: 20
+            implicitHeight: modalLayout.implicitHeight + 48 // Dynamically scales to fit inputs + padding
+            radius: 24
             color: Theme.surface
-            border.color: Theme.borderColor
+            border.color: Qt.rgba(Theme.borderColor.r, Theme.borderColor.g, Theme.borderColor.b, 0.4)
             border.width: 1
 
             ColumnLayout {
-                anchors.fill: parent
+                id: modalLayout
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
                 anchors.margins: 24
-                spacing: 16
+                spacing: 20
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 6
+                    spacing: 4
 
                     Text {
-                        text: "Authentication Required"
+                        text: "Enter Password"
                         color: Theme.text
                         font.family: Theme.fontFamily
-                        font.pixelSize: 18
-                        font.weight: Font.Black
+                        font.pixelSize: 20
+                        font.weight: Font.Bold
                     }
 
                     Text {
-                        text: "Connecting to: " + wifiRoot.targetSSID
-                        color: Theme.muted
+                        text: "Connecting to " + wifiRoot.targetSSID
+                        color: Theme.subtext
                         font.family: Theme.fontFamily
-                        font.pixelSize: 12
-                        font.weight: Font.Bold
+                        font.pixelSize: 13
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
                     }
                 }
 
-                // High-Reliability Native TextInput Wrapper
                 Rectangle {
                     Layout.fillWidth: true
-                    height: 46
-                    radius: 12
-                    color: Theme.surface
-                    border.width: 1
-                    border.color: passwordInput.activeFocus ? Theme.blue : Theme.overlay
+                    height: 48
+                    radius: 16
+                    color: Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.05)
+                    border.width: 2
+                    border.color: passwordInput.activeFocus ? Theme.accent : "transparent"
+                    Behavior on border.color { ColorAnimation { duration: 200 } }
 
                     TextInput {
                         id: passwordInput
@@ -765,9 +646,10 @@ Item {
                         anchors.rightMargin: 16
                         verticalAlignment: TextInput.AlignVCenter
                         color: Theme.text
-                        font.pixelSize: 14
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 15
                         
-                        focus: true
+                        focus: passwordModalOverlay.visible
                         selectByMouse: true
                         echoMode: TextInput.Password
 
@@ -775,46 +657,43 @@ Item {
                             wifiRoot.targetPassword = text
                         }
 
-                        // Connect on Enter
                         Keys.onReturnPressed: {
                             Quickshell.execDetached(["nmcli", "device", "wifi", "connect", wifiRoot.targetSSID, "password", wifiRoot.targetPassword])
                             wifiRoot.targetSSID = ""
                             wifiRoot.targetPassword = ""
                             passwordInput.text = ""
-                            wifiRoot.refreshWifi()
+                            wifiRoot.refreshAll()
                         }
 
-                        // Close on Escape
                         Keys.onEscapePressed: {
                             wifiRoot.targetSSID = ""
                             wifiRoot.targetPassword = ""
                             passwordInput.text = ""
                         }
+                    }
 
-                        // Force Keyboard Focus automatically upon visibility
-                        onVisibleChanged: {
-                            if (visible) forceActiveFocus()
-                        }
-
-                        Component.onCompleted: {
-                            forceActiveFocus()
-                        }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.IBeamCursor
+                        acceptedButtons: Qt.LeftButton
+                        onClicked: passwordInput.forceActiveFocus()
                     }
                 }
-
-                Item { Layout.fillHeight: true }
 
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 12
 
+                    // Cancel Button
                     Rectangle {
                         Layout.fillWidth: true
-                        height: 42
-                        radius: 10
-                        color: Theme.overlay
-                        border.color: Theme.borderColor
-                        border.width: 1
+                        height: 40
+                        radius: 20
+                        color: cancelMa.containsMouse ? Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.1) : "transparent"
+                        
+                        scale: cancelMa.pressed ? 0.98 : (cancelMa.containsMouse ? 1.02 : 1.0)
+                        Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                        Behavior on color { ColorAnimation { duration: 150 } }
 
                         Text {
                             anchors.centerIn: parent
@@ -824,9 +703,10 @@ Item {
                             font.pixelSize: 13
                             font.weight: Font.Bold
                         }
-
                         MouseArea {
+                            id: cancelMa
                             anchors.fill: parent
+                            hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
                                 wifiRoot.targetSSID = ""
@@ -836,32 +716,36 @@ Item {
                         }
                     }
 
+                    // Connect Button
                     Rectangle {
                         Layout.fillWidth: true
-                        height: 42
-                        radius: 10
-                        color: Qt.rgba(Theme.blue.r, Theme.blue.g, Theme.blue.b, 0.15)
-                        border.color: Theme.blue
-                        border.width: 1
+                        height: 40
+                        radius: 20
+                        color: connectMa.containsMouse ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.8) : Theme.accent
+
+                        scale: connectMa.pressed ? 0.98 : (connectMa.containsMouse ? 1.02 : 1.0)
+                        Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                        Behavior on color { ColorAnimation { duration: 150 } }
 
                         Text {
                             anchors.centerIn: parent
                             text: "Connect"
-                            color: Theme.blue
+                            color: Theme.base
                             font.family: Theme.fontFamily
                             font.pixelSize: 13
                             font.weight: Font.Bold
                         }
-
                         MouseArea {
+                            id: connectMa
                             anchors.fill: parent
+                            hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
                                 Quickshell.execDetached(["nmcli", "device", "wifi", "connect", wifiRoot.targetSSID, "password", wifiRoot.targetPassword])
                                 wifiRoot.targetSSID = ""
                                 wifiRoot.targetPassword = ""
                                 passwordInput.text = ""
-                                wifiRoot.refreshWifi()
+                                wifiRoot.refreshAll()
                             }
                         }
                     }

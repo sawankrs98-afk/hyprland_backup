@@ -1,10 +1,12 @@
 local mainMod = "SUPER"
 
-hl.bind(mainMod .. " + SUPER_L", hl.dsp.exec_cmd("rofi -show drun"), { on_release = true })
+hl.bind(mainMod .. " + SUPER_L", hl.dsp.exec_cmd("fuzzel"), { on_release = true })
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("kitty"))
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + M", hl.dsp.exit())
 hl.bind(mainMod .. " + ALT + B", hl.dsp.exec_cmd("pkill waybar && waybar &"))
+hl.bind(mainMod .. " + ALT + M", hl.dsp.exec_cmd("quickshell -p shell.qml &"))
+
 
 hl.bind(mainMod .. " + SHIFT + left", hl.dsp.window.move({ direction = "l" }))
 hl.bind(mainMod .. " + SHIFT + right", hl.dsp.window.move({ direction = "r" }))
@@ -51,7 +53,7 @@ hl.bind(mainMod .. " + CTRL + Print", hl.dsp.exec_cmd([[sh -c 'hyprctl activewin
 
 
 
-hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("bash ~/hyprland_backup/scripts/wallpaper-switcher.sh"))
+hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("bash ~/rice/scripts/wallpaper-switcher.sh"))
 
 
 hl.bind(mainMod .. " + F", hl.dsp.window.float({ action = "toggle" }))
@@ -66,7 +68,7 @@ hl.bind(mainMod .. " + P", hl.dsp.exec_cmd("hyprctl dispatch pin"))
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
-hl.bind(mainMod .. "+ A", function() os.execute("bash ~/hyprland_backup/scripts/animation-switcher.sh &") end)
+hl.bind(mainMod .. "+ A", function() os.execute("bash ~/rice/scripts/animation-switcher.sh &") end)
 
 hl.bind(mainMod .. "+ O", function() os.execute("bash ~/hyprland_backup/scripts/layout_switcher.sh &") end)
 -- Lock screen instantly with Super + L

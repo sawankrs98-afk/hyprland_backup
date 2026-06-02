@@ -2,12 +2,12 @@
    SWAYNC — ADVANCED NOTIFICATION CENTER
    ═══════════════════════════════════════════════════ */
 
-@define-color base   #06120D;
+@define-color base   #0f1417;
 @define-color surface    rgba(30, 30, 46, 0.90);
 @define-color overlay    rgba(49, 50, 68, 0.80);
-@define-color text   #c1c0bb;
+@define-color text   #dee3e6;
 @define-color subtext    #a6adc8;
-@define-color accent #7D817A;
+@define-color accent #89d0ee;
 @define-color mauve      #cba6f7;
 @define-color green      #a6e3a1;
 @define-color red        #f38ba8;

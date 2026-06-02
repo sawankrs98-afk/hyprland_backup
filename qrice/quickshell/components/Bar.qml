@@ -10,169 +10,308 @@ import "modules"
 
 Item {
     id: barRoot
+    anchors.fill: parent
 
-    // ── Thin vertical separator for inside the tray pill ──
-    component TraySep: Rectangle {
+    // ── INLINE COMPONENTS ─────────────────────────────────
+    
+    // 1. Subtle dividing line
+    component BarDivider: Rectangle {
         width: 1
         height: 16
-        radius: 1
-        Layout.leftMargin: 3
-        Layout.rightMargin: 3
-        color: Qt.rgba(Theme.borderColor.r, Theme.borderColor.g, Theme.borderColor.b, 0.40)
+        color: Qt.rgba(Theme.borderColor.r, Theme.borderColor.g, Theme.borderColor.b, 0.22)
+        Layout.alignment: Qt.AlignVCenter
+        Layout.leftMargin: 6
+        Layout.rightMargin: 6
     }
 
-    // ── Full bar background ────────────────────────────────
+    // 2. Passive hover wrapper (Allows clicks to pass through to native modules)
+    component GlowWrapper: Item {
+        id: wrapper
+        property color glowColor: Theme.accent
+        property Item targetModule: null
+        
+        implicitWidth: targetModule ? targetModule.implicitWidth : 0
+        implicitHeight: targetModule ? targetModule.implicitHeight : 0
+        
+        Rectangle {
+            anchors.centerIn: parent
+            width: wrapper.implicitWidth + 16
+            height: wrapper.implicitHeight + 8
+            radius: 8
+            color: hoverTracker.hovered ? Qt.rgba(glowColor.r, glowColor.g, glowColor.b, 0.08) : "transparent"
+            Behavior on color { ColorAnimation { duration: 150 } }
+        }
+        
+        scale: hoverTracker.hovered ? 1.03 : 1.0
+        Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+        
+        HoverHandler { id: hoverTracker }
+    }
+
+    // ── BAR SURFACE ───────────────────────────────────────
     Rectangle {
+        id: barSurface
         anchors.fill: parent
-        color: Qt.rgba(Theme.base.r, Theme.base.g, Theme.base.b, 0.88)
-        border.color: Qt.rgba(Theme.borderColor.r, Theme.borderColor.g, Theme.borderColor.b, 0.22)
-        border.width: 1
+        color: Qt.rgba(Theme.base.r, Theme.base.g, Theme.base.b, 0.95)
 
-        // ── Three-column layout ────────────────────────────
+        // Bottom boundary line
+        Rectangle {
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 1
+            color: Qt.rgba(Theme.borderColor.r, Theme.borderColor.g, Theme.borderColor.b, 0.25)
+        }
+
+        // ══════════════════════════════════════════════════
+        // LEFT: Identity, Workspaces & Window Title
+        // ══════════════════════════════════════════════════
         RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 12
-            anchors.rightMargin: 12
-            spacing: 0
+            anchors.left: parent.left
+            anchors.leftMargin: 20
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 4
 
-            // ════════════════════════════════════════════════
-            // LEFT — launcher + media
-            // ════════════════════════════════════════════════
-            RowLayout {
-                Layout.preferredWidth: barRoot.width * 0.33
-                Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
-                spacing: 8
-
-                // Arch launcher button
-                Rectangle {
-                    id: launcherBtn
-                    width: 34
-                    height: 30
-                    radius: 9
-
-                    property bool hovered: launchMa.containsMouse
-                    property bool pressed: launchMa.pressed
-
-                    color: hovered
-                        ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.22)
-                        : Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.08)
-                    border.color: hovered
-                        ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.60)
-                        : Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.22)
-                    border.width: 1
-                    scale: pressed ? 0.86 : (hovered ? 1.06 : 1.0)
-
-                    Behavior on color   { ColorAnimation  { duration: 130 } }
-                    Behavior on border.color { ColorAnimation { duration: 130 } }
-                    Behavior on scale   { NumberAnimation { duration: 130; easing.type: Easing.OutBack } }
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "󰣇"
-                        color: Theme.accent
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 17
-                    }
-
-                    MouseArea {
-                        id: launchMa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: Quickshell.execDetached(["rofi", "-show", "drun"])
-                    }
-                }
-
-                // Media widget
-                MediaModule {}
-            }
-
-            // ════════════════════════════════════════════════
-            // CENTER — workspace name + dots
-            // ════════════════════════════════════════════════
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-                spacing: 12
-
-                Workspaces {
-                    Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-                }
-            }
-
-            // ════════════════════════════════════════════════
-            // RIGHT — system tray pill
-            // ════════════════════════════════════════════════
+            // 1. Fedora / Shell Logo (Clicks Swallowed)
             Item {
-                Layout.preferredWidth: barRoot.width * 0.33
-                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                height: parent.height
+                implicitWidth: 36
+                implicitHeight: 36
+                
+                Text {
+                    anchors.centerIn: parent
+                    text: "󰣇"
+                    color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.9)
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 22
+                }
+                
+                MouseArea { 
+                    anchors.fill: parent
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    onClicked: {} 
+                }
+            }
 
-                // The pill — auto-sizes to content
+            BarDivider {}
+
+            // 2. Workspaces (Interactive)
+            Workspaces {
+                id: workspacesItem
+                Layout.alignment: Qt.AlignVCenter
+            }
+
+            BarDivider {}
+
+            // 3. Active Window Title (Clicks Swallowed)
+            Item {
+                implicitWidth: windowTitleMod.implicitWidth
+                implicitHeight: windowTitleMod.implicitHeight
+                Layout.alignment: Qt.AlignVCenter
+
+                WindowTitleModule {
+                    id: windowTitleMod
+                    anchors.fill: parent
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    cursorShape: Qt.ArrowCursor
+                    onClicked: {} 
+                }
+            }
+        }
+
+        // ══════════════════════════════════════════════════
+        // CENTER: Clock & Control Center Toggle
+        // ══════════════════════════════════════════════════
+        Item {
+            id: centerAnchor
+            anchors.centerIn: parent
+            implicitWidth: clockMod.implicitWidth
+            implicitHeight: clockMod.implicitHeight
+            
+            Rectangle {
+                anchors.centerIn: parent
+                width: parent.width + 24
+                height: parent.height + 12
+                radius: 8
+                color: clockMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                Behavior on color { ColorAnimation { duration: 150 } }
+            }
+            
+            scale: clockMa.pressed ? 0.95 : (clockMa.containsMouse ? 1.03 : 1.0)
+            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+            
+            ClockModule {
+                id: clockMod
+                anchors.centerIn: parent
+            }
+            
+            MouseArea {
+                id: clockMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    Globals.wifiOpen = false;
+                    Globals.bluetoothOpen = false;
+                    Globals.batteryOpen = false;
+                    Globals.notificationsOpen = false;
+                    Globals.controlCenterOpen = !Globals.controlCenterOpen;
+                }
+            }
+        }
+
+        // ══════════════════════════════════════════════════
+        // RIGHT: Media, Tray, Notifications & Status
+        // ══════════════════════════════════════════════════
+        RowLayout {
+            anchors.right: parent.right
+            anchors.rightMargin: 20
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 6
+
+            // 1. Media
+            GlowWrapper {
+                glowColor: Theme.mauve
+                targetModule: mediaMod
+                MediaModule { id: mediaMod; anchors.centerIn: parent }
+            }
+
+            BarDivider {}
+
+            // 2. System Tray
+            TrayModule {
+                Layout.alignment: Qt.AlignVCenter
+            }
+
+            BarDivider {}
+
+            // 3. Notification Bell (Amber Glow)
+            Item {
+                implicitWidth: 28
+                implicitHeight: 28
+                Layout.alignment: Qt.AlignVCenter
+                
                 Rectangle {
-                    id: trayPill
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
+                    id: notifBg
+                    anchors.centerIn: parent
+                    width: 36
                     height: 36
                     radius: 18
-                    color: Qt.rgba(Theme.surface.r, Theme.surface.g, Theme.surface.b, 0.92)
-                    border.color: Qt.rgba(Theme.borderColor.r, Theme.borderColor.g, Theme.borderColor.b, 0.32)
-                    border.width: 1
-                    implicitWidth: trayRow.implicitWidth + 32
-
-                    Behavior on implicitWidth {
-                        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
-                    }
-
-                    RowLayout {
-                        id: trayRow
-                        anchors.centerIn: parent
-                        spacing: 4
-
-                        WifiModule {}
-                        TraySep {}
-                        BluetoothModule {}
-                        TraySep {}
-                        BrightnessModule {}
-                        TraySep {}
-                        VolumeModule {}
-                        TraySep {}
-                        BatteryModule {}
-                        TraySep {}
-
-                        // Notification bell
-                        Rectangle {
-                            width: 30
-                            height: 30
-                            radius: 15
-                            color: notifMa.containsMouse
-                                ? Qt.rgba(Theme.peach.r, Theme.peach.g, Theme.peach.b, 0.18)
-                                : "transparent"
-                            Behavior on color { ColorAnimation { duration: 130 } }
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "󰂚"
-                                color: Theme.peach
-                                font.family: Theme.fontFamily
-                                font.pixelSize: 15
-                            }
-
-                            MouseArea {
-                                id: notifMa
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: Quickshell.execDetached(["swaync-client", "-t", "-sw"])
-                            }
-                        }
-
-                        TraySep {}
-                        ClockModule {}
+                    color: "transparent"
+                    Behavior on color { ColorAnimation { duration: 150 } }
+                }
+                
+                Text {
+                    anchors.centerIn: parent
+                    text: "󰂚"
+                    color: Theme.text
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 18
+                }
+                
+                scale: notifMa.pressed ? 0.95 : (notifMa.containsMouse ? 1.03 : 1.0)
+                Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                
+                MouseArea {
+                    id: notifMa
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    
+                    onEntered: notifBg.color = Qt.rgba(Theme.peach.r, Theme.peach.g, Theme.peach.b, 0.08)
+                    onExited: notifBg.color = "transparent"
+                    onClicked: {
+                        Globals.wifiOpen = false;
+                        Globals.bluetoothOpen = false;
+                        Globals.batteryOpen = false;
+                        Globals.controlCenterOpen = false;
+                        Globals.notificationsOpen = !Globals.notificationsOpen;
                     }
                 }
             }
 
-        } // end RowLayout
-    } // end background Rectangle
-} // end barRoot
+            BarDivider {}
+
+            // 4. Status Module Cluster (UPGRADED SPACING)
+            // 4. Status Module Cluster (FIXED NATIVE CLICK TARGETS)
+            RowLayout {
+                spacing: 14 
+                Layout.alignment: Qt.AlignVCenter
+                
+                // WiFi (Cyan Glow)
+                GlowWrapper {
+    glowColor: Theme.sky
+    targetModule: wifiMod
+    Item {
+        anchors.fill: parent
+        WifiModule { id: wifiMod; anchors.fill: parent }
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                Globals.wifiOpen = !Globals.wifiOpen
+                Globals.batteryOpen = false
+                Globals.bluetoothOpen = false
+                Globals.notificationsOpen = false
+                Globals.controlCenterOpen = false
+            }
+        }
+    }
+}
+
+                GlowWrapper {
+    glowColor: Theme.green
+    targetModule: batMod
+
+    Item {
+        anchors.fill: parent
+        BatteryModule {
+            id: batMod
+            anchors.fill: parent
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                Globals.batteryOpen = !Globals.batteryOpen
+                Globals.wifiOpen = false
+                Globals.bluetoothOpen = false
+                Globals.notificationsOpen = false
+                Globals.controlCenterOpen = false
+            }
+        }
+    }
+}
+
+GlowWrapper {
+    glowColor: Theme.blue
+    targetModule: btMod
+    Item {
+        anchors.fill: parent
+        BluetoothModule { id: btMod; anchors.fill: parent }
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                Globals.bluetoothOpen = !Globals.bluetoothOpen
+                Globals.batteryOpen = false
+                Globals.wifiOpen = false
+                Globals.notificationsOpen = false
+                Globals.controlCenterOpen = false
+            }
+        }
+    }
+}
+
+
+            }
+        }
+    }
+}

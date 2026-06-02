@@ -1,92 +1,144 @@
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Services.Mpris
 import QtQuick
-
 import "components"
 import "popups/status"
 
 ShellRoot {
+// ╔══════════════════════════════════════════════════╗
+// ║  POPUP SIZES — edit per-popup independently      ║
+// ╚══════════════════════════════════════════════════╝
+readonly property int popupTopGap:   0  
+readonly property int popupRightGap: 6   
 
-    Variants {
-        model: Quickshell.screens
+// Dynamic media height calculation rule
+readonly property int mediaPopupHeight: {
+    let players = Mpris.players.values || []
 
-        PanelWindow {
-            required property var modelData
+    let count = players.length
 
-            screen: modelData
+    if (count < 1)
+        count = 1
 
-            implicitHeight: Theme.barHeight
+    return Math.min(
+        750,
+        40 + count * 120
+    )
+}
 
-            anchors {
-                top: true
-                left: true
-                right: true
-            }
+// Per-popup dimensions — change freely
+readonly property var popupSizes: ({
+"wifi":          { width: 360, height: 500, isLeft: false, margin: 6 },
+"bluetooth":     { width: 400, height: 500, isLeft: false, margin: 6 },
+"battery":       { width: 420, height: 460, isLeft: false, margin: 6 },
+"volume":        { width: 380, height: 460, isLeft: false, margin: 6 },
+"calendar":      { width: 640, height: 400, isLeft: false, margin: 6 },  
+"brightness":    { width: 380, height: 300, isLeft: false, margin: 6 },
+"notifications": { width: 540, height: 740, isLeft: false, margin: 6 },
+"media":         { width: 420, height: 340, isLeft: false,  margin: 200 }, 
+"controlcenter": { width: 700, height: 700, isLeft: true,  margin: 600 }, 
+"system":        { width: 360, height: 360, isLeft: false, margin: 320 }   
+})
 
-            color: "transparent"
+// Resolves which popup is active with clean non-state fallback
+readonly property string activePopup: {
+if (Globals.mediaOpen)         return "media"
+if (Globals.controlCenterOpen) return "controlcenter"
+if (Globals.wifiOpen)          return "wifi"
+if (Globals.bluetoothOpen)     return "bluetooth"
+if (Globals.batteryOpen)       return "battery"
+if (Globals.volumeOpen)        return "volume"
+if (Globals.calendarOpen)      return "calendar"
+if (Globals.brightnessOpen)    return "brightness"
+if (Globals.notificationsOpen) return "notifications"
+if (Globals.sysmonOpen)        return "system"
+return "" // ← Fixed fallback statement
+}
 
-            WlrLayershell.layer: WlrLayer.Top
-            WlrLayershell.namespace: "qs_topbar"
+// Safe layout bounding checks
+readonly property int activePopupWidth:  activePopup ? popupSizes[activePopup].width : 0
+readonly property bool activePopupIsLeft: activePopup ? popupSizes[activePopup].isLeft : false
+readonly property int activePopupMargin:  activePopup ? popupSizes[activePopup].margin : 0
 
-            Bar {
-                anchors.fill: parent
-            }
-        }
-    }
+// Evaluator overrides explicit media dictionary definitions safely
+readonly property int activePopupHeight: {
+    if (!activePopup)
+        return 0
+    if (activePopup === "media")
+        return mediaPopupHeight
+    return popupSizes[activePopup].height
+}
 
-    Variants {
-        model: (
-            Globals.wifiOpen ||
-            Globals.bluetoothOpen ||
-            Globals.batteryOpen ||
-            Globals.volumeOpen ||
-            Globals.calendarOpen ||
-            Globals.brightnessOpen
-        ) ? Quickshell.screens : []
+// ── Bar ────────────────────────────────────────────────
+Variants {
+model: Quickshell.screens
+PanelWindow {
+required property var modelData
+screen: modelData
+implicitHeight: Theme.barHeight
+anchors {
+top: true
+left: true
+right: true
+}
+color: "transparent"
+WlrLayershell.layer: WlrLayer.Top
+WlrLayershell.namespace: "qs_topbar"
+Bar {
+anchors.fill: parent
+}
+}
+}
 
-        PanelWindow {
-            required property var modelData
+// ── Status popups ──────────────────────────────────────
+Variants {
+model: (
+Globals.wifiOpen           ||
+Globals.bluetoothOpen      ||
+Globals.batteryOpen        ||
+Globals.volumeOpen         ||
+Globals.calendarOpen       ||
+Globals.brightnessOpen     ||
+Globals.notificationsOpen  ||
+Globals.mediaOpen          ||   
+Globals.controlCenterOpen  || 
+Globals.sysmonOpen
+) ? Quickshell.screens : []
 
-            screen: modelData
+PanelWindow {
+required property var modelData
+screen: modelData
+anchors {
+top:   true
+left:  activePopupIsLeft
+right: !activePopupIsLeft
+}
 
-            // Added volumeOpen so it gets the full 480px width
-            implicitWidth:
-                Globals.calendarOpen ? 640 :
-                Globals.brightnessOpen ? 480 :
-                Globals.bluetoothOpen ? 500 :
-                Globals.volumeOpen ? 480 :
-                Globals.wifiOpen ? 500 :
-                Globals.batteryOpen ? 430 :
-                300
+Component.onCompleted: {
+    console.log(
+        "MEDIA HEIGHT:",
+        mediaPopupHeight
+    )
+}
+margins {
+top: Theme.barHeight - 26
+left:  activePopupIsLeft ? activePopupMargin : 0
+right: !activePopupIsLeft ? activePopupMargin : 0
+}
 
-            // Fixed the typo and matched the massive 340px height we built
-            implicitHeight:
-                Globals.calendarOpen ? 440 :
-                Globals.brightnessOpen ? 340 :
-                Globals.volumeOpen ? 200 :
-                Globals.batteryOpen ? 560 :
-                Globals.wifiOpen ? 800 :
-                Globals.bluetoothOpen ? 700 :
-                160
+implicitWidth: activePopupWidth
+implicitHeight: activePopupHeight
 
-            anchors {
-                top: true
-                right: true
-            }
+color: "transparent"
+WlrLayershell.layer: WlrLayer.Overlay
+WlrLayershell.namespace: "qs_popup"
 
-            margins {
-                top: Theme.barHeight + 2
-                right: 6
-            }
+WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
 
-            color: "transparent"
-
-            WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.namespace: "qs_popup"
-
-            StatusPopups {
-                anchors.fill: parent
-            }
-        }
-    }
+StatusPopups {
+anchors.fill: parent
+}
+}
+}
 }

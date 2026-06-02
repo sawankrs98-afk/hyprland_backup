@@ -2,149 +2,91 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
-
 import "../../"
 
-Rectangle {
+Item {
     id: root
-
-    Layout.preferredWidth: 28
-    Layout.preferredHeight: 28
-
-    radius: 14
-
-    color:
-        btMouse.containsMouse
-        ? Theme.overlay
-        : "transparent"
-
-    border.width: 1
-
-    border.color:
-        btMouse.containsMouse
-        ? Theme.blue
-        : "transparent"
 
     property bool powered: true
     property bool connected: false
     property string deviceName: ""
 
-    //
-    // Connected device
-    //
+    // Perfectly matches the 30px height of the other tray icons
+    implicitWidth: btIconText.implicitWidth
+    implicitHeight: 30
+
+    // ── Connected device polling ──────────────────────────
     Process {
         id: connectedProc
-
         command: [
             "sh",
             "-c",
             "bluetoothctl devices Connected 2>/dev/null | head -n1 | cut -d' ' -f3-"
         ]
-
         stdout: StdioCollector {
             onStreamFinished: {
                 let out = text.trim()
-
-                root.connected =
-                    out.length > 0
-
+                root.connected = out.length > 0
                 root.deviceName = out
             }
         }
     }
 
-    //
-    // Bluetooth power state
-    //
+    // ── Bluetooth power state polling ─────────────────────
     Process {
         id: powerProc
-
         command: [
             "sh",
             "-c",
             "bluetoothctl show | grep Powered"
         ]
-
         stdout: StdioCollector {
             onStreamFinished: {
-                root.powered =
-                    text.indexOf("yes") >= 0
+                root.powered = text.indexOf("yes") >= 0
             }
         }
     }
 
-    //
-    // Refresh state
-    //
     Timer {
         interval: 2000
-
         running: true
-
         repeat: true
-
         triggeredOnStart: true
-
         onTriggered: {
             connectedProc.running = true
             powerProc.running = true
         }
     }
 
-    //
-    // Hover animation
-    //
-    Behavior on color {
-        ColorAnimation {
-            duration: 150
-        }
-    }
-
-    Behavior on border.color {
-        ColorAnimation {
-            duration: 150
-        }
-    }
-
-    //
-    // Bluetooth icon
-    //
+    // ── Clean Icon with Animations ────────────────────────
     Text {
+        id: btIconText
         anchors.centerIn: parent
 
-        text:
-            !root.powered
-            ? "󰂲"
-            : root.connected
-            ? "󰂱"
-            : "󰂯"
-
-        color:
-            !root.powered
-            ? Theme.muted
-            : root.connected
-            ? Theme.blue
-            : Theme.subtext
+        text: !root.powered ? "󰂲" : (root.connected ? "󰂱" : "󰂯")
+        
+        // Muted when off, Blue when connected, Subtext when on but disconnected
+        color: !root.powered ? Theme.muted : (root.connected ? Theme.blue : Theme.subtext)
 
         font.family: Theme.fontFamily
+        font.pixelSize: 18
+        
+        // Satisfying click bounce
+        scale: btMouse.pressed ? 0.85 : 1.0
 
-        font.pixelSize: 16
-
-        font.weight: Font.Bold
+        Behavior on color { ColorAnimation { duration: 200 } }
+        Behavior on scale { NumberAnimation { duration: 100 } }
     }
 
     MouseArea {
         id: btMouse
-
         anchors.fill: parent
-
+        anchors.margins: -4 // Gives a slightly larger, forgiving click target
         hoverEnabled: true
-
         cursorShape: Qt.PointingHandCursor
 
         onClicked: {
-            Globals.bluetoothOpen =
-                !Globals.bluetoothOpen
+            Globals.bluetoothOpen = !Globals.bluetoothOpen
 
             Globals.wifiOpen = false
             Globals.batteryOpen = false

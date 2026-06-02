@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# 1. Define paths
-WALLPAPER_DIR="/home/rgs_hyper/Pictures/Wallpapers"
+# 1. Define paths (FIXED TO YOUR ACTUAL SYSTEM)
+WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
 CACHE_DIR="$HOME/.cache/wallpaper-thumbnails"
-RICE_DIR="$HOME/Rice"
+RICE_DIR="$HOME/rice"
 
 # 2. Create the hidden cache folder if it doesn't exist
 mkdir -p "$CACHE_DIR"
@@ -142,7 +142,13 @@ sed -i -E "s|background-color: (#[0-9a-fA-F]+|rgba.*[^0]);|background-color: $WL
 sed -i -E "s|border: (.*)solid (#[0-9a-fA-F]+|rgba.*);|border: \1solid $WLOGOUT_BORDER;|" "$RICE_DIR/wlogout/style.css"
 
 # ── HYPRLAND BORDERS ───────────────────────────────────
-(sleep 0.5 && hyprctl eval "hl.config({ general = { col = { active_border = { colors = {'$HYPR_ACTIVE_1', '$HYPR_ACTIVE_2'}, angle = 45 }, inactive_border = { colors = {'$HYPR_INACTIVE'}, angle = 0 } } } })") &
+# 1. Apply the colors immediately without reloading
+hyprctl keyword general:col.active_border "$HYPR_ACTIVE_1 $HYPR_ACTIVE_2 45deg"
+hyprctl keyword general:col.inactive_border "$HYPR_INACTIVE"
+
+# 2. Save the colors to your general.lua so they persist on reboot
+sed -i -E "s|active_border = \".*\"|active_border = \"$HYPR_ACTIVE_1 $HYPR_ACTIVE_2 45deg\"|" "$RICE_DIR/hypr/general.lua"
+sed -i -E "s|inactive_border = \".*\"|inactive_border = \"$HYPR_INACTIVE\"|" "$RICE_DIR/hypr/general.lua"
 
 # ── KITTY ──────────────────────────────────────────────
 cat "$HOME/.cache/wal/colors-kitty.conf" > "$HOME/.config/kitty/current-theme.conf"

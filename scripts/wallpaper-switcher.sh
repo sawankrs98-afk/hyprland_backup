@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Updated variables to your current username and repository architecture
-WALLPAPER_DIR="/home/saksham/Pictures/Wallpapers"
+WALLPAPER_DIR="/home/suzaku/Pictures/Wallpapers"
 CACHE_DIR="$HOME/.cache/wallpaper-thumbnails"
-RICE_DIR="/home/saksham/hyprland_backup"
+RICE_DIR="/home/suzaku/rice"
 
 mkdir -p "$CACHE_DIR"
 
@@ -61,16 +61,16 @@ awww img "$TARGET" \
     --transition-step 180 \
     --transition-fps 144
 
-# ── GENERATE COLORS WITH PYWAL ─────────────────────────
-# Fixed binary call shortcut for standard Arch installation
-wal -q -n -i "$TARGET"
+# ── GENERATE COLORS WITH MATUGEN (PURE AUTOMATED MODE) ──
+mkdir -p "$HOME/.cache/matugen"
+matugen image "$TARGET" -m dark --source-color-index 0
 
-[ ! -f "$HOME/.cache/wal/colors.sh" ] && \
-    notify-send "Theme Error" "Pywal failed" && exit 1
+[ ! -f "$HOME/.cache/matugen/colors.sh" ] && \
+    notify-send "Theme Error" "Matugen failed" && exit 1
 
-source "$HOME/.cache/wal/colors.sh"
+source "$HOME/.cache/matugen/colors.sh"
 
-# ── MAP PYWAL → YOUR VARIABLES ─────────────────────────
+# ── MAP GENERATED → YOUR VARIABLES ─────────────────────
 WAYBAR_BASE="$background"
 WAYBAR_TEXT="$foreground"
 WAYBAR_ACCENT="$color4"
@@ -132,10 +132,10 @@ sed -i "s|gradient_color_6 = .*|gradient_color_6 = '${color6}';|" "$RICE_DIR/cav
 pkill -USR1 cava
 
 # ── HYPRLAND BORDERS ───────────────────────────────────
-(sleep 0.5 && hyprctl eval "hl.config({ general = { col = { active_border = { colors = {'$HYPR_ACTIVE_1', '$HYPR_ACTIVE_2'}, angle = 45 }, inactive_border = { colors = {'$HYPR_INACTIVE'}, angle = 0 } } } })") &
+hyprctl reload
 
 # ── KITTY ──────────────────────────────────────────────
-cat "$HOME/.cache/wal/colors-kitty.conf" > "$HOME/.config/kitty/current-theme.conf" 2>/dev/null || true
 kill -SIGUSR1 $(pgrep -a kitty | awk '{print $1}') 2>/dev/null
 
 notify-send "Wallpaper & Theme Updated" "Colors extracted from: $choice"
+echo "$TARGET" > "$HOME/.cache/matugen/last_wallpaper"

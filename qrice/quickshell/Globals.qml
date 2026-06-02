@@ -10,6 +10,9 @@ QtObject {
     property bool volumeOpen: false
     property bool notificationsOpen: false
     property bool calendarOpen: false
+    property bool sysmonOpen: false
+    property bool mediaOpen: false
+    property bool controlCenterOpen: false
     
     // INDEPENDENT TEXT TOGGLES
     property bool showWifiSpeed: false

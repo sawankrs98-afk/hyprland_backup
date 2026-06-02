@@ -14,16 +14,12 @@ Item {
     // ── DEVICE STATE ──
     property string connectedDevice:   ""
     property string connectedMac:      ""
+    property string connectedBattery:  "" // NEW: Tracks active device battery
     property bool   isDeviceConnected: false
     property bool   bluetoothEnabled:  true
     property bool   discoverable:      false
     property bool   pairable:          false
     property bool   scanning:          false
-
-    // ── SECTION EXPANSION ──
-    property bool connectedExpanded: true
-    property bool savedExpanded:     true
-    property bool nearbyExpanded:    true
 
     // ── DEVICE MODELS ──
     property var pairedDevices: []
@@ -33,16 +29,6 @@ Item {
     property int connectedCount: 0
     property int pairedCount:    0
     property int nearbyCount:    0
-
-    // ── SEARCH ──
-    property string searchText: ""
-
-    // ── COLORS ──
-    property color cardBg:    Qt.rgba(1, 1, 1, 0.05)
-    property color cardHover: Theme.overlay
-    property color successBg: Qt.rgba(Theme.green.r, Theme.green.g, Theme.green.b, 0.15)
-    property color dangerBg:  Qt.rgba(Theme.red.r,   Theme.red.g,   Theme.red.b,   0.15)
-    property color blueBg:    Qt.rgba(Theme.blue.r,  Theme.blue.g,  Theme.blue.b,  0.15)
 
     // ────────────────────────────────────────────────
     // HELPER FUNCTIONS
@@ -75,13 +61,6 @@ Item {
         return "󰤟"
     }
 
-    function signalText(rssi) {
-        if (rssi > -60) return "Strong"
-        if (rssi > -70) return "Good"
-        if (rssi > -80) return "Fair"
-        return "Weak"
-    }
-
     function refreshAll() {
         btProc.running      = true
         btStateProc.running = true
@@ -95,18 +74,13 @@ Item {
     // PROCESSES
     // ────────────────────────────────────────────────
 
-    // Action runner — no stdout needed, just fires commands
-    Process {
-        id: btActionProc
-    }
+    Process { id: btActionProc }
 
-    // BT adapter state (power / discoverable / pairable)
     Process {
         id: btStateProc
         command: ["sh", "-c", "bluetoothctl show"]
         stdout: StdioCollector {
             onStreamFinished: {
-                // FIX: StdioCollector exposes `text`, not `txt`
                 bluetoothEnabled = text.indexOf("Powered: yes")       >= 0
                 discoverable     = text.indexOf("Discoverable: yes")  >= 0
                 pairable         = text.indexOf("Pairable: yes")      >= 0
@@ -114,7 +88,6 @@ Item {
         }
     }
 
-    // Currently connected device
     Process {
         id: btProc
         command: ["sh", "-c", "bluetoothctl devices Connected 2>/dev/null | head -n1 | cut -d' ' -f2-"]
@@ -127,9 +100,11 @@ Item {
                     connectedDevice   = p.slice(1).join(" ")
                     isDeviceConnected = true
                     connectedCount    = 1
+                    batProc.running   = true // Fetch battery for this newly confirmed device
                 } else {
                     connectedMac      = ""
                     connectedDevice   = ""
+                    connectedBattery  = ""
                     isDeviceConnected = false
                     connectedCount    = 0
                 }
@@ -137,7 +112,18 @@ Item {
         }
     }
 
-    // Paired device list
+    // NEW: Background worker to safely extract device battery percentage
+    Process {
+        id: batProc
+        command: ["sh", "-c", btRoot.connectedMac !== "" ? "bluetoothctl info " + btRoot.connectedMac + " | grep 'Battery Percentage' | awk -F'(' '{print $2}' | tr -d ')'" : "echo ''"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                let out = text.trim()
+                btRoot.connectedBattery = (out !== "") ? out + "%" : ""
+            }
+        }
+    }
+
     Process {
         id: pairedProc
         command: ["sh", "-c", "bluetoothctl devices Paired"]
@@ -161,7 +147,6 @@ Item {
         }
     }
 
-    // Nearby device scanner (runs bluetoothctl scan then lists)
     Process {
         id: scanProc
         command: ["sh", "-c", "timeout 8 bluetoothctl scan on >/dev/null 2>&1 && bluetoothctl devices"]
@@ -186,7 +171,6 @@ Item {
     // TIMERS
     // ────────────────────────────────────────────────
 
-    // Fast poll: connected state + BT power every 3 s
     Timer {
         interval: 3000
         running:  Globals.bluetoothOpen
@@ -199,7 +183,6 @@ Item {
         }
     }
 
-    // Stats sync every 5 s
     Timer {
         interval: 5000
         running:  Globals.bluetoothOpen
@@ -207,7 +190,6 @@ Item {
         onTriggered: refreshAll()
     }
 
-    // Background rescan every 30 s
     Timer {
         interval: 30000
         running:  Globals.bluetoothOpen
@@ -227,708 +209,445 @@ Item {
     }
 
     // ────────────────────────────────────────────────
-    // ROOT LAYOUT
+    // UI: MATERIAL YOU / PIXEL OS
     // ────────────────────────────────────────────────
 
-    ColumnLayout {
+    Rectangle {
         anchors.fill: parent
-        anchors.margins: 10
-        spacing: 8
+        radius: 24
+        color: Theme.surface
+        border.color: Qt.rgba(Theme.borderColor.r, Theme.borderColor.g, Theme.borderColor.b, 0.4)
+        border.width: 1
+        clip: true
 
-        // ── HEADER: POWER TOGGLE ────────────────────
-        Rectangle {
-            Layout.fillWidth: true
-            height: 58; radius: 14
-            color: Theme.overlay
-            border.color: Theme.borderColor; border.width: 1
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 24
+            spacing: 20
 
+            // ── TOP HEADER & SWITCH ──
             RowLayout {
-                anchors.fill:        parent
-                anchors.leftMargin:  16
-                anchors.rightMargin: 16
-                spacing: 12
+                Layout.fillWidth: true
+                spacing: 16
 
-                Text {
-                    text:           "󰂯"
-                    color:          bluetoothEnabled ? Theme.blue : Theme.muted
-                    font.pixelSize: 22
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 2
+                    Text { 
+                        text: "Bluetooth"
+                        color: Theme.text
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 28
+                        font.weight: Font.Bold 
+                    }
+                    Text { 
+                        text: btRoot.bluetoothEnabled ? (btRoot.isDeviceConnected ? "Connected to " + btRoot.connectedDevice : "Ready to connect") : "Bluetooth is turned off"
+                        color: Theme.subtext
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 15
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                    }
                 }
 
-                Text {
-                    text:           "Bluetooth"
-                    color:          Theme.text
-                    font.pixelSize: 14
-                    font.weight:    Font.Black
-                }
-
-                Item { Layout.fillWidth: true }
-
-                // iOS-style toggle switch
                 Rectangle {
-                    id: powerToggle
-                    width: 58; height: 30; radius: 15
-                    color: bluetoothEnabled ? Theme.blue : Theme.muted
+                    id: toggleSwitch
+                    width: 52
+                    height: 28
+                    radius: 14
+                    color: btRoot.bluetoothEnabled ? Theme.accent : Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.1)
+                    Behavior on color { ColorAnimation { duration: 200 } }
 
-                    Behavior on color { ColorAnimation { duration: 160 } }
+                    scale: toggleMa.pressed ? 0.92 : (toggleMa.containsMouse ? 1.05 : 1.0)
+                    Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
 
                     Rectangle {
-                        width: 24; height: 24; radius: 12
-                        y: 3; color: "white"
-                        x: bluetoothEnabled ? 31 : 3
-                        Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutQuint } }
+                        width: 20
+                        height: 20
+                        radius: 10
+                        color: btRoot.bluetoothEnabled ? Theme.base : Theme.text
+                        anchors.verticalCenter: parent.verticalCenter
+                        x: btRoot.bluetoothEnabled ? parent.width - width - 4 : 4
+                        Behavior on x { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+                        Behavior on color { ColorAnimation { duration: 200 } }
                     }
 
-                    // Click animation
-                    scale: powerToggleMouse.pressed ? 0.93 : 1.0
-                    Behavior on scale { NumberAnimation { duration: 80 } }
-
                     MouseArea {
-                        id: powerToggleMouse
+                        id: toggleMa
                         anchors.fill: parent
-                        onClicked: btCmd("bluetoothctl power " + (bluetoothEnabled ? "off" : "on"))
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: btCmd("bluetoothctl power " + (btRoot.bluetoothEnabled ? "off" : "on"))
                     }
                 }
             }
-        }
 
+            // ── MAIN SCROLLABLE LIST ──
+            ScrollView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                
+                // CRITICAL FIX: Forces ScrollView contents to fill width, preventing truncation
+                contentWidth: availableWidth 
+                
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                ScrollBar.vertical.policy: ScrollBar.AsNeeded
+                visible: btRoot.bluetoothEnabled
 
-        // ── HERO CARD ───────────────────────────────
-        Rectangle {
-            Layout.fillWidth: true
-            height: 180; radius: 18
-            color: cardBg; border.color: Theme.borderColor; border.width: 1
-
-            ColumnLayout {
-                anchors.fill:    parent
-                anchors.margins: 18
-                spacing: 10
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 16
-
-                    // Device icon circle
-                    Rectangle {
-                        width: 78; height: 78; radius: 39
-                        color: isDeviceConnected ? blueBg : Theme.overlay
-                        Behavior on color { ColorAnimation { duration: 300 } }
-
-                        Text {
-                            anchors.centerIn: parent
-                            text:           isDeviceConnected ? "󰂱" : "󰂯"
-                            color:          isDeviceConnected ? Theme.blue : Theme.muted
-                            font.pixelSize: 38
-                        }
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 5
-
-                        Text {
-                            text:             isDeviceConnected ? connectedDevice : "Bluetooth Ready"
-                            color:            Theme.text
-                            font.pixelSize:   17; font.weight: Font.Black
-                            elide:            Text.ElideRight
-                            Layout.fillWidth: true
-                        }
-
-                        // Connected pill badge
-                        Rectangle {
-                            visible:       isDeviceConnected
-                            height:        26; radius: 999
-                            color:         successBg
-                            implicitWidth: heroStatusText.implicitWidth + 22
-
-                            Text {
-                                id: heroStatusText
-                                anchors.centerIn: parent
-                                text:           "● Connected"
-                                color:          Theme.green
-                                font.pixelSize: 11; font.weight: Font.Bold
-                            }
-                        }
-
-                        Text {
-                            visible:        isDeviceConnected
-                            text:           "Bluetooth Audio Device"
-                            color:          Theme.subtext
-                            font.pixelSize: 11
-                        }
-
-                        Text {
-                            visible:        !isDeviceConnected
-                            text:           "No device connected"
-                            color:          Theme.muted
-                            font.pixelSize: 11
-                        }
-                    }
-                }
-
-                Item { Layout.fillHeight: true }
-
-                // Disconnect + Refresh row
-                RowLayout {
-                    Layout.fillWidth: true
+                // CRITICAL FIX: Changed from ColumnLayout to standard Column to prevent width stealing
+                Column {
+                    width: parent.width
                     spacing: 8
 
+                    // ── CONNECTED HERO CARD ──
                     Rectangle {
-                        Layout.fillWidth: true; height: 34; radius: 10
-                        visible:      isDeviceConnected
-                        color:        dangerBg
-                        border.color: Theme.red; border.width: 1
-                        scale: disconnectMouse.pressed ? 0.94 : 1.0
-                        Behavior on scale { NumberAnimation { duration: 80 } }
+                        width: parent.width // Bind to Column width
+                        implicitHeight: heroLayout.implicitHeight + 32
+                        radius: 24
+                        color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.12)
+                        visible: btRoot.isDeviceConnected
 
-                        Text {
-                            anchors.centerIn: parent
-                            text:           "󰂲 Disconnect"
-                            color:          Theme.red
-                            font.pixelSize: 11; font.weight: Font.Bold
-                        }
-                        MouseArea {
-                            id: disconnectMouse
-                            anchors.fill: parent
-                            onClicked:    btCmd("bluetoothctl disconnect '" + connectedMac + "'")
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true; height: 34; radius: 10
-                        color:        blueBg
-                        border.color: Theme.blue; border.width: 1
-                        scale: refreshMouse.pressed ? 0.94 : 1.0
-                        Behavior on scale { NumberAnimation { duration: 80 } }
-
-                        Text {
-                            anchors.centerIn: parent
-                            text:           "󰑐 Refresh"
-                            color:          Theme.blue
-                            font.pixelSize: 11; font.weight: Font.Bold
-                        }
-                        MouseArea {
-                            id: refreshMouse
-                            anchors.fill: parent
-                            onClicked: { scanning = true; scanProc.running = true }
-                        }
-                    }
-                }
-            }
-        }
-
-
-        // ── SCROLLABLE DEVICE LISTS ─────────────────
-        ScrollView {
-            Layout.fillWidth:  true
-            Layout.fillHeight: true
-            clip:              true
-            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-
-            ColumnLayout {
-                width:   parent.width
-                spacing: 8
-
-                // ════════════════════════════════════
-                // SAVED DEVICES SECTION
-                // ════════════════════════════════════
-
-                // Section header
-                Rectangle {
-                    Layout.fillWidth: true; height: 40; radius: 12
-                    color: Theme.overlay; border.color: Theme.borderColor; border.width: 1
-                    scale: savedHeaderMouse.pressed ? 0.98 : 1.0
-                    Behavior on scale { NumberAnimation { duration: 80 } }
-
-                    RowLayout {
-                        anchors.fill:        parent
-                        anchors.leftMargin:  14
-                        anchors.rightMargin: 14
-
-                        Text {
-                            text:           savedExpanded ? "▼" : "▶"
-                            color:          Theme.blue
-                            font.pixelSize: 11; font.weight: Font.Black
-                        }
-                        Text {
-                            text:           "Saved Devices"
-                            color:          Theme.text
-                            font.pixelSize: 13; font.weight: Font.Black
-                        }
-                        Item { Layout.fillWidth: true }
-
-                        Rectangle {
-                            radius: 999; height: 22; color: blueBg
-                            implicitWidth: savedBadge.implicitWidth + 18
-                            Text {
-                                id:             savedBadge
-                                anchors.centerIn: parent
-                                text:           pairedDevices.length
-                                color:          Theme.blue
-                                font.pixelSize: 10; font.weight: Font.Bold
-                            }
-                        }
-                    }
-
-                    MouseArea {
-                        id: savedHeaderMouse
-                        anchors.fill: parent
-                        onClicked:    savedExpanded = !savedExpanded
-                    }
-                }
-
-                // Collapsible content
-                Item {
-                    Layout.fillWidth: true
-                    implicitHeight:   savedExpanded ? savedColumn.implicitHeight : 0
-                    clip: true
-                    Behavior on implicitHeight { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-
-                    ColumnLayout {
-                        id:      savedColumn
-                        width:   parent.width
-                        spacing: 6
-
-                        Repeater {
-                            model: pairedDevices.filter(function(d) {
-                                return searchText.length === 0 ||
-                                       d.name.toLowerCase().includes(searchText.toLowerCase()) ||
-                                       d.mac.toLowerCase().includes(searchText.toLowerCase())
-                            })
-
-                            delegate: Rectangle {
-                                id:               savedCard
-                                Layout.fillWidth: true
-                                height:           82; radius: 14
-                                opacity:          0
-
-                                // Stored copy of modelData fields so buttons can
-                                // safely read them even after model updates.
-                                // FIX: this is the key reason Connect/Forget failed —
-                                // modelData can become undefined inside nested closures
-                                // when the Repeater model refreshes. Snapshot it here.
-                                property string deviceMac:       modelData.mac
-                                property string deviceName:      modelData.name
-                                property bool   deviceConnected: modelData.connected
-
-                                Component.onCompleted: opacity = 1
-                                Behavior on opacity { NumberAnimation { duration: 250 } }
-
-                                color: cardHoverArea.containsMouse ? Theme.overlay : Theme.surface
-                                border.color: deviceConnected ? Theme.green    : Theme.borderColor
-                                border.width: deviceConnected ? 2              : 1
-
-                                // Hover scale — only on the card itself, not buttons
-                                scale: cardHoverArea.containsMouse ? 1.018 : 1.0
-                                Behavior on scale { NumberAnimation { duration: 130 } }
-                                Behavior on color { ColorAnimation  { duration: 130 } }
-
-                                RowLayout {
-                                    anchors.fill:        parent
-                                    anchors.leftMargin:  14
-                                    anchors.rightMargin: 10
-                                    spacing: 12
-
-                                    // Device icon circle
-                                    Rectangle {
-                                        width: 42; height: 42; radius: 21
-                                        color: deviceConnected ? successBg : blueBg
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text:           deviceIcon(deviceName)
-                                            color:          deviceConnected ? Theme.green : Theme.blue
-                                            font.pixelSize: 18
-                                        }
-                                    }
-
-                                    // Device info
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        spacing: 2
-
-                                        Text {
-                                            text:             deviceName
-                                            color:            Theme.text
-                                            font.pixelSize:   12; font.weight: Font.Bold
-                                            Layout.fillWidth: true; elide: Text.ElideRight
-                                        }
-                                        Text {
-                                            text:           deviceMac
-                                            color:          Theme.muted
-                                            font.pixelSize: 10
-                                        }
-
-                                        Rectangle {
-                                            visible:       deviceConnected
-                                            radius:        999; height: 18; color: successBg
-                                            implicitWidth: connectedBadge.implicitWidth + 14
-                                            Text {
-                                                id:             connectedBadge
-                                                anchors.centerIn: parent
-                                                text:           "● Connected"
-                                                color:          Theme.green
-                                                font.pixelSize: 9; font.weight: Font.Bold
-                                            }
-                                        }
-                                    }
-
-                                    // Action buttons column
-                                    // FIX: z:1 ensures these sit above the hover MouseArea
-                                    ColumnLayout {
-                                        spacing: 5
-                                        z: 1
-
-                                        // Connect / Reconnect
-                                        Rectangle {
-                                            id:     connectBtn
-                                            width:  82; height: 28; radius: 8
-                                            color:  connectBtnMouse.pressed
-                                                        ? Qt.darker(successBg, 1.3)
-                                                        : successBg
-                                            scale:  connectBtnMouse.pressed ? 0.90 : 1.0
-                                            Behavior on scale { NumberAnimation { duration: 80 } }
-                                            Behavior on color { ColorAnimation  { duration: 80 } }
-
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text:           deviceConnected ? "Reconnect" : "Connect"
-                                                color:          Theme.green
-                                                font.pixelSize: 10; font.weight: Font.Bold
-                                            }
-                                            MouseArea {
-                                                id:           connectBtnMouse
-                                                anchors.fill: parent
-                                                // FIX: use the snapshotted property, not modelData
-                                                onClicked:    btCmd("bluetoothctl connect '" + deviceMac + "'")
-                                            }
-                                        }
-
-                                        // Forget
-                                        Rectangle {
-                                            id:     forgetBtn
-                                            width:  82; height: 28; radius: 8
-                                            color:  forgetBtnMouse.pressed
-                                                        ? Qt.darker(dangerBg, 1.3)
-                                                        : dangerBg
-                                            scale:  forgetBtnMouse.pressed ? 0.90 : 1.0
-                                            Behavior on scale { NumberAnimation { duration: 80 } }
-                                            Behavior on color { ColorAnimation  { duration: 80 } }
-
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text:           "Forget"
-                                                color:          Theme.red
-                                                font.pixelSize: 10; font.weight: Font.Bold
-                                            }
-                                            MouseArea {
-                                                id:           forgetBtnMouse
-                                                anchors.fill: parent
-                                                // FIX: use the snapshotted property, not modelData
-                                                onClicked:    btCmd("bluetoothctl remove '" + deviceMac + "'")
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // Hover detector — z:0 so it sits BELOW the buttons (z:1)
-                                MouseArea {
-                                    id:           cardHoverArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    z:            0
-                                    // Do NOT handle clicks here — buttons handle their own
-                                    // Setting acceptedButtons to none lets clicks pass through
-                                    // to child items (the buttons above)
-                                    acceptedButtons: Qt.NoButton
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // ════════════════════════════════════
-                // NEARBY DEVICES SECTION
-                // ════════════════════════════════════
-
-                // Section header
-                Rectangle {
-                    Layout.fillWidth: true; height: 40; radius: 12
-                    color: Theme.overlay; border.color: Theme.borderColor; border.width: 1
-                    scale: nearbyHeaderMouse.pressed ? 0.98 : 1.0
-                    Behavior on scale { NumberAnimation { duration: 80 } }
-
-                    RowLayout {
-                        anchors.fill:        parent
-                        anchors.leftMargin:  14
-                        anchors.rightMargin: 14
-
-                        Text {
-                            text:           nearbyExpanded ? "▼" : "▶"
-                            color:          Theme.yellow
-                            font.pixelSize: 11; font.weight: Font.Black
-                        }
-                        Text {
-                            text:           "Nearby Devices"
-                            color:          Theme.text
-                            font.pixelSize: 13; font.weight: Font.Black
-                        }
-                        Item { Layout.fillWidth: true }
-
-                        Rectangle {
-                            radius: 999; height: 22
-                            color:         Qt.rgba(Theme.yellow.r, Theme.yellow.g, Theme.yellow.b, 0.15)
-                            implicitWidth: nearbyBadge.implicitWidth + 18
-                            Text {
-                                id:             nearbyBadge
-                                anchors.centerIn: parent
-                                text:           nearbyDevices.length
-                                color:          Theme.yellow
-                                font.pixelSize: 10; font.weight: Font.Bold
-                            }
-                        }
-                    }
-
-                    MouseArea {
-                        id: nearbyHeaderMouse
-                        anchors.fill: parent
-                        onClicked:    nearbyExpanded = !nearbyExpanded
-                    }
-                }
-
-                // Collapsible content
-                Item {
-                    Layout.fillWidth: true
-                    implicitHeight:   nearbyExpanded ? nearbyColumn.implicitHeight : 0
-                    clip: true
-                    Behavior on implicitHeight { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-
-                    ColumnLayout {
-                        id:      nearbyColumn
-                        width:   parent.width
-                        spacing: 6
-
-                        // Empty state
                         ColumnLayout {
-                            visible:          nearbyDevices.length === 0
-                            Layout.fillWidth: true
-                            spacing: 10
+                            id: heroLayout
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.margins: 16
+                            spacing: 16
 
-                            Item { height: 8 }
-
-                            Rectangle {
-                                Layout.alignment: Qt.AlignHCenter
-                                width: 72; height: 72; radius: 36; color: Theme.overlay
+                            // Device Info Row
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 16
 
                                 Text {
-                                    anchors.centerIn: parent
-                                    text:           "󰂲"
-                                    color:          Theme.muted
-                                    font.pixelSize: 36
+                                    text: deviceIcon(btRoot.connectedDevice)
+                                    color: Theme.accent
+                                    font.pixelSize: 32
+                                    font.family: Theme.fontFamily
                                 }
-                            }
 
-                            Text {
-                                Layout.alignment: Qt.AlignHCenter
-                                text:           "No Bluetooth devices nearby"
-                                color:          Theme.subtext
-                                font.pixelSize: 12; font.weight: Font.Bold
-                            }
-
-                            Text {
-                                Layout.alignment: Qt.AlignHCenter
-                                text:           "Press Scan to search"
-                                color:          Theme.muted
-                                font.pixelSize: 11
-                            }
-
-                            Item { height: 8 }
-                        }
-
-                        Repeater {
-                            model: nearbyDevices.filter(function(d) {
-                                return searchText.length === 0 ||
-                                       d.name.toLowerCase().includes(searchText.toLowerCase()) ||
-                                       d.mac.toLowerCase().includes(searchText.toLowerCase())
-                            })
-
-                            delegate: Rectangle {
-                                id:               nearbyCard
-                                Layout.fillWidth: true
-                                height:           72; radius: 14
-                                opacity:          0
-
-                                // Snapshot modelData same as saved cards
-                                property string deviceMac:  modelData.mac
-                                property string deviceName: modelData.name
-                                property int    deviceRssi: modelData.rssi
-
-                                Component.onCompleted: opacity = 1
-                                Behavior on opacity { NumberAnimation { duration: 250 } }
-
-                                color: nearbyHoverArea.containsMouse ? Theme.overlay : Theme.surface
-                                border.color: Theme.borderColor; border.width: 1
-
-                                scale: nearbyHoverArea.containsMouse ? 1.018 : 1.0
-                                Behavior on scale { NumberAnimation { duration: 130 } }
-                                Behavior on color { ColorAnimation  { duration: 130 } }
-
-                                RowLayout {
-                                    anchors.fill:        parent
-                                    anchors.leftMargin:  14
-                                    anchors.rightMargin: 10
-                                    spacing: 12
-
-                                    // Device icon
-                                    Rectangle {
-                                        width: 42; height: 42; radius: 21; color: blueBg
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text:           deviceIcon(deviceName)
-                                            color:          Theme.blue
-                                            font.pixelSize: 18
-                                        }
-                                    }
-
-                                    // Device info
-                                    ColumnLayout {
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+                                    Text { 
+                                        text: btRoot.connectedDevice
+                                        color: Theme.text
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 15
+                                        font.weight: Font.Bold
+                                        elide: Text.ElideRight
                                         Layout.fillWidth: true
-                                        spacing: 2
-
-                                        Text {
-                                            text:             deviceName
-                                            color:            Theme.text
-                                            font.pixelSize:   12; font.weight: Font.Bold
-                                            Layout.fillWidth: true; elide: Text.ElideRight
-                                        }
-                                        Text {
-                                            text:           deviceMac
-                                            color:          Theme.muted
-                                            font.pixelSize: 10
-                                        }
-
-                                        RowLayout {
-                                            spacing: 5
-                                            Text { text: signalIcon(deviceRssi); color: Theme.yellow; font.pixelSize: 11 }
-                                            Text { text: signalText(deviceRssi); color: Theme.yellow; font.pixelSize: 10 }
-                                        }
                                     }
-
-                                    // Pair button — z:1 to sit above hover area
-                                    Rectangle {
-                                        id:     pairBtn
-                                        width:  82; height: 30; radius: 8; z: 1
-                                        color:  pairBtnMouse.pressed
-                                                    ? Qt.darker(successBg, 1.3)
-                                                    : successBg
-                                        scale:  pairBtnMouse.pressed ? 0.90 : 1.0
-                                        Behavior on scale { NumberAnimation { duration: 80 } }
-                                        Behavior on color { ColorAnimation  { duration: 80 } }
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text:           "Pair"
-                                            color:          Theme.green
-                                            font.pixelSize: 10; font.weight: Font.Bold
+                                    
+                                    // Status & Battery Row
+                                    RowLayout {
+                                        spacing: 6
+                                        Text { 
+                                            text: "Active connection"
+                                            color: Theme.subtext
+                                            font.family: Theme.fontFamily
+                                            font.pixelSize: 12 
                                         }
-                                        MouseArea {
-                                            id:           pairBtnMouse
-                                            anchors.fill: parent
-                                            onClicked:    btCmd("bluetoothctl pair '" + deviceMac + "'")
+                                        Text {
+                                            visible: btRoot.connectedBattery !== ""
+                                            text: "·"
+                                            color: Theme.subtext
+                                            font.family: Theme.fontFamily
+                                            font.pixelSize: 12 
+                                        }
+                                        Text {
+                                            visible: btRoot.connectedBattery !== ""
+                                            text: "󰁹 " + btRoot.connectedBattery
+                                            color: Theme.subtext
+                                            font.family: Theme.fontFamily
+                                            font.pixelSize: 12 
+                                            font.weight: Font.Bold
                                         }
                                     }
                                 }
 
-                                // Hover-only area — passes clicks through
-                                MouseArea {
-                                    id:              nearbyHoverArea
-                                    anchors.fill:    parent
-                                    hoverEnabled:    true
-                                    z:               0
-                                    acceptedButtons: Qt.NoButton
+                                // Connected Pill
+                                Rectangle {
+                                    height: 26
+                                    implicitWidth: connectedText.implicitWidth + 24
+                                    radius: 13
+                                    color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.2)
+                                    Text { 
+                                        id: connectedText
+                                        anchors.centerIn: parent
+                                        text: "Connected"
+                                        color: Theme.accent
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 12
+                                        font.weight: Font.Bold 
+                                    }
+                                }
+                            }
+
+                            // Action Buttons Row
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+
+                                // Disconnect Button
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 36
+                                    radius: 18
+                                    color: disconnectMa.containsMouse ? Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.1) : "transparent"
+                                    border.color: Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.2)
+                                    border.width: 1
+
+                                    scale: disconnectMa.pressed ? 0.98 : (disconnectMa.containsMouse ? 1.02 : 1.0)
+                                    Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                                    Behavior on color { ColorAnimation { duration: 150 } }
+
+                                    Text { 
+                                        anchors.centerIn: parent
+                                        text: "Disconnect"
+                                        color: Theme.text
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 13
+                                        font.weight: Font.Medium 
+                                    }
+                                    MouseArea { 
+                                        id: disconnectMa
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: btCmd("bluetoothctl disconnect '" + btRoot.connectedMac + "'")
+                                    }
+                                }
+
+                                // Forget Button
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 36
+                                    radius: 18
+                                    color: heroForgetMa.containsMouse ? Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.1) : "transparent"
+                                    border.color: Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.2)
+                                    border.width: 1
+
+                                    scale: heroForgetMa.pressed ? 0.98 : (heroForgetMa.containsMouse ? 1.02 : 1.0)
+                                    Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                                    Behavior on color { ColorAnimation { duration: 150 } }
+
+                                    Text { 
+                                        anchors.centerIn: parent
+                                        text: "Forget"
+                                        color: Theme.text
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 13
+                                        font.weight: Font.Medium 
+                                    }
+                                    MouseArea { 
+                                        id: heroForgetMa
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: btCmd("bluetoothctl remove '" + btRoot.connectedMac + "'")
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                // Bottom padding inside scroll area
-                Item { height: 4 }
+                    Item { width: 1; height: 8; visible: btRoot.isDeviceConnected }
 
-            } // inner ColumnLayout
-        } // ScrollView
-
-        // ── FOOTER: ACTION BUTTONS ──────────────────
-        Rectangle {
-            Layout.fillWidth: true; height: 50; radius: 14
-            color: Theme.overlay; border.color: Theme.borderColor; border.width: 1
-
-            RowLayout {
-                anchors.fill:        parent
-                anchors.leftMargin:  10
-                anchors.rightMargin: 10
-                spacing: 8
-
-                // Scan
-                Rectangle {
-                    Layout.fillWidth: true; height: 34; radius: 10
-                    color: scanning ? Theme.blue : blueBg
-                    scale: scanFooterMouse.pressed ? 0.94 : 1.0
-                    Behavior on scale { NumberAnimation { duration: 80 } }
-                    Behavior on color { ColorAnimation  { duration: 200 } }
-
+                    // ── PAIRED DEVICES ──
                     Text {
-                        anchors.centerIn: parent
-                        text:           scanning ? "󰑐 Scanning..." : "󰑐 Scan"
-                        color:          scanning ? "white"         : Theme.blue
-                        font.pixelSize: 11; font.weight: Font.Bold
+                        text: "Saved Devices"
+                        color: Theme.subtext
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 13
+                        font.weight: Font.Bold
+                        x: 8
+                        visible: btRoot.pairedDevices.length > (btRoot.isDeviceConnected ? 1 : 0)
                     }
-                    MouseArea {
-                        id:      scanFooterMouse
-                        anchors.fill: parent
-                        enabled: !scanning
-                        onClicked: { scanning = true; scanProc.running = true }
-                    }
-                }
 
-                // Blueman Manager
-                Rectangle {
-                    Layout.fillWidth: true; height: 34; radius: 10; color: Theme.surface
-                    scale: managerMouse.pressed ? 0.94 : 1.0
-                    Behavior on scale { NumberAnimation { duration: 80 } }
+                    Repeater {
+                        model: btRoot.pairedDevices
 
-                    Text {
-                        anchors.centerIn: parent
-                        text:           "󰂯 Manager"
-                        color:          Theme.text
-                        font.pixelSize: 11; font.weight: Font.Bold
-                    }
-                    MouseArea {
-                        id:           managerMouse
-                        anchors.fill: parent
-                        onClicked:    Quickshell.execDetached(["blueman-manager"])
-                    }
-                }
+                        delegate: Rectangle {
+                            width: parent.width // CRITICAL FIX: Forces full width
+                            height: 64
+                            radius: 16
+                            // Hide from list if it's the currently connected device
+                            visible: !modelData.connected
+                            
+                            color: pairedRowMa.containsMouse ? Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.06) : "transparent"
+                            
+                            scale: pairedRowMa.pressed ? 0.98 : (pairedRowMa.containsMouse ? 1.02 : 1.0)
+                            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                            Behavior on color { ColorAnimation { duration: 150 } }
 
-                // Settings
-                Rectangle {
-                    Layout.fillWidth: true; height: 34; radius: 10; color: Theme.surface
-                    scale: settingsMouse.pressed ? 0.94 : 1.0
-                    Behavior on scale { NumberAnimation { duration: 80 } }
+                            property string deviceMac:  modelData.mac
+                            property string deviceName: modelData.name
 
-                    Text {
-                        anchors.centerIn: parent
-                        text:           "󰌍 Settings"
-                        color:          Theme.text
-                        font.pixelSize: 11; font.weight: Font.Bold
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 16
+                                anchors.rightMargin: 16
+                                spacing: 16
+
+                                Text {
+                                    text: deviceIcon(deviceName)
+                                    color: Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.5)
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: 22
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+                                    Text { 
+                                        text: deviceName
+                                        color: Theme.text
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 15
+                                        font.weight: Font.Medium
+                                        elide: Text.ElideRight
+                                        Layout.fillWidth: true
+                                    }
+                                    Text { 
+                                        text: "Saved device · Tap to connect"
+                                        color: Theme.subtext
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 12 
+                                    }
+                                }
+
+                                // Trailing Forget Button
+                                Rectangle {
+                                    height: 32
+                                    implicitWidth: forgetText.implicitWidth + 24
+                                    radius: 16
+                                    color: forgetRowMa.containsMouse ? Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.1) : "transparent"
+                                    visible: pairedRowMa.containsMouse
+                                    
+                                    Text {
+                                        id: forgetText
+                                        anchors.centerIn: parent
+                                        text: "Forget"
+                                        color: Theme.text
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 12
+                                        font.weight: Font.Bold
+                                    }
+                                    
+                                    MouseArea {
+                                        id: forgetRowMa
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: btCmd("bluetoothctl remove '" + deviceMac + "'")
+                                    }
+                                }
+                            }
+
+                            MouseArea {
+                                id: pairedRowMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: btCmd("bluetoothctl connect '" + deviceMac + "'")
+                            }
+                        }
                     }
-                    MouseArea {
-                        id:           settingsMouse
-                        anchors.fill: parent
-                        onClicked:    Quickshell.execDetached(["gnome-control-center", "bluetooth"])
+
+                    Item { width: 1; height: 12; visible: btRoot.nearbyDevices.length > 0 }
+
+                    // ── AVAILABLE DEVICES ──
+                    RowLayout {
+                        width: parent.width
+                        visible: btRoot.nearbyDevices.length > 0 || btRoot.scanning
+                        
+                        Text {
+                            text: "Available Devices"
+                            color: Theme.subtext
+                            font.family: Theme.fontFamily
+                            font.pixelSize: 13
+                            font.weight: Font.Bold
+                            Layout.leftMargin: 8
+                        }
+                        Item { Layout.fillWidth: true }
+                        Text {
+                            text: "Scanning..."
+                            color: Theme.accent
+                            font.family: Theme.fontFamily
+                            font.pixelSize: 12
+                            font.weight: Font.Bold
+                            visible: btRoot.scanning
+                            Layout.rightMargin: 8
+                        }
                     }
+
+                    Repeater {
+                        model: btRoot.nearbyDevices
+
+                        delegate: Rectangle {
+                            width: parent.width // CRITICAL FIX: Forces full width
+                            height: 64
+                            radius: 16
+                            color: nearbyRowMa.containsMouse ? Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.06) : "transparent"
+                            
+                            scale: nearbyRowMa.pressed ? 0.98 : (nearbyRowMa.containsMouse ? 1.02 : 1.0)
+                            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                            Behavior on color { ColorAnimation { duration: 150 } }
+
+                            property string deviceMac:  modelData.mac
+                            property string deviceName: modelData.name
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 16
+                                anchors.rightMargin: 16
+                                spacing: 16
+
+                                Text {
+                                    text: deviceIcon(deviceName)
+                                    color: Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.5)
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: 22
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+                                    Text { 
+                                        text: deviceName
+                                        color: Theme.text
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 15
+                                        font.weight: Font.Medium
+                                        elide: Text.ElideRight
+                                        Layout.fillWidth: true
+                                    }
+                                    Text { 
+                                        text: "New device · Tap to pair"
+                                        color: Theme.subtext
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 12 
+                                    }
+                                }
+                            }
+
+                            MouseArea {
+                                id: nearbyRowMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: btCmd("bluetoothctl pair '" + deviceMac + "'")
+                            }
+                        }
+                    }
+
+                    // Bottom padding buffer
+                    Item { width: 1; height: 16 }
                 }
             }
         }
-
-    } // ColumnLayout
-} // Item
+    }
+}

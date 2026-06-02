@@ -9,19 +9,24 @@ Item {
 
     property bool   connected: false
     property string signal:    "0"
+    
+    // Speed tracking properties
     property string speed:     "0 KB/s"
     property double lastRx:    0
 
-    implicitWidth:  pill.implicitWidth
-    implicitHeight: 34
+    // The module width will smoothly expand if speed is toggled on and we are connected
+    implicitWidth:  wifiIconText.implicitWidth + (Globals.showWifiSpeed && connected ? speedText.implicitWidth + 8 : 0)
+    implicitHeight: 30
+
+    Behavior on implicitWidth { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
 
     function wifiIcon() {
         let s = parseInt(signal)
-        if (!connected) return "󰤮"
-        if (s >= 80)    return "󰤨"
-        if (s >= 60)    return "󰤥"
-        if (s >= 40)    return "󰤢"
-        if (s >= 20)    return "󰤟"
+        if (!connected) return "󰖪" // Clean, centered Wifi-Off slash
+        if (s >= 80)    return "󰖩" // Solid Android-style full pie slice
+        if (s >= 60)    return "󰤥" 
+        if (s >= 40)    return "󰤢" 
+        if (s >= 20)    return "󰤟" 
         return "󰤯"
     }
 
@@ -79,74 +84,61 @@ Item {
         triggeredOnStart: true
         onTriggered: {
             wifiProc.running  = true
-            speedProc.running = true
+            // Only poll for speed if the user actually has the toggle enabled
+            if (Globals.showWifiSpeed) {
+                speedProc.running = true
+            }
         }
     }
 
-    // ── Pill ─────────────────────────────────────────────
-    Rectangle {
-        id: pill
-        anchors.verticalCenter: parent.verticalCenter
-        height: 30
-        radius: 10
-        implicitWidth: pillRow.implicitWidth + 18
+    Row {
+        id: innerRow
+        anchors.centerIn: parent
+        spacing: 10
 
-        color: wifiMa.containsMouse
-            ? Qt.rgba(Theme.surface.r, Theme.surface.g, Theme.surface.b, 1.0)
-            : "transparent"
-        border.width: 1
-        border.color: wifiMa.containsMouse
-            ? Qt.rgba(Theme.blue.r, Theme.blue.g, Theme.blue.b, 0.45)
-            : "transparent"
+        // ── Clean Icon ───────────────────────────────────────
+        Text {
+            id: wifiIconText
+            anchors.verticalCenter: parent.verticalCenter
+            text:  root.wifiIcon()
+            color: root.signalColor()
+            font.family: Theme.fontFamily
+            font.pixelSize: 18
 
-        Behavior on color        { ColorAnimation { duration: 130 } }
-        Behavior on border.color { ColorAnimation { duration: 130 } }
-        Behavior on implicitWidth { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
-
-        RowLayout {
-            id: pillRow
-            anchors.centerIn: parent
-            spacing: 6
-
-            // Wifi icon
-            Text {
-                text:  root.wifiIcon()
-                color: root.signalColor()
-                font.family:    Theme.fontFamily
-                font.pixelSize: 16
-                Layout.alignment: Qt.AlignVCenter
-
-                Behavior on color { ColorAnimation { duration: 200 } }
-            }
-
-            // Speed label — only when hovered
-            Text {
-                visible: wifiMa.containsMouse && root.connected
-                opacity: wifiMa.containsMouse ? 1.0 : 0.0
-                text:  root.speed
-                color: Theme.subtext
-                font.family:    Theme.fontFamily
-                font.pixelSize: 11
-                font.weight:    Font.Medium
-                Layout.alignment: Qt.AlignVCenter
-
-                Behavior on opacity { NumberAnimation { duration: 150 } }
-            }
+            Behavior on color { ColorAnimation { duration: 200 } }
         }
 
-        MouseArea {
-            id: wifiMa
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                Globals.wifiOpen       = !Globals.wifiOpen
-                Globals.bluetoothOpen  = false
-                Globals.batteryOpen    = false
-                Globals.brightnessOpen = false
-                Globals.volumeOpen     = false
-                Globals.calendarOpen   = false
-            }
+        // ── Conditional Speed Label ──────────────────────────
+        Text {
+            id: speedText
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.speed
+            color: Theme.subtext
+            font.family: Theme.fontFamily
+            font.pixelSize: 11
+            font.weight: Font.Medium
+            
+            // Only visible if global setting is true AND we are actually connected to a network
+            visible: Globals.showWifiSpeed && root.connected
+            opacity: visible ? 1.0 : 0.0
+
+            Behavior on opacity { NumberAnimation { duration: 150 } }
+        }
+    }
+
+    MouseArea {
+        id: wifiMa
+        anchors.fill: parent
+        anchors.margins: -4 // Gives a slightly larger click target
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onClicked: {
+            Globals.wifiOpen       = !Globals.wifiOpen
+            Globals.bluetoothOpen  = false
+            Globals.batteryOpen    = false
+            Globals.brightnessOpen = false
+            Globals.volumeOpen     = false
+            Globals.calendarOpen   = false
         }
     }
 }

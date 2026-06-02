@@ -150,58 +150,6 @@ Item {
             }
         }
 
-        RowLayout {
-            Layout.fillWidth: true
-
-            spacing: 10
-
-            Repeater {
-                model: [
-                    { icon: "󰌾", cmd: "loginctl lock-session" },
-                    { icon: "󰤄", cmd: "systemctl suspend" },
-                    { icon: "󰑐", cmd: "systemctl reboot" },
-                    { icon: "󰐥", cmd: "systemctl poweroff" }
-                ]
-
-                Rectangle {
-                    Layout.fillWidth: true
-                    height: 72
-
-                    radius: 14
-
-                    color: Theme.overlay
-
-                    border.width: 1
-                    border.color: Theme.borderColor
-
-                    Text {
-                        anchors.centerIn: parent
-
-                        text: modelData.icon
-
-                        color: Theme.text
-
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 26
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-
-                        onClicked: {
-                            Quickshell.execDetached([
-                                "sh",
-                                "-c",
-                                modelData.cmd
-                            ])
-                        }
-                    }
-                }
-            }
-        }
 
         RowLayout {
             Layout.fillWidth: true

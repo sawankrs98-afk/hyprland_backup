@@ -1,0 +1,18 @@
+[config]
+contrast = 0.0
+
+[templates.hyprland]
+input_path = "~/rice/matugen/templates/hyprland.lua"
+output_path = "~/rice/hypr/lua/matugen_colors.lua"
+
+[templates.quickshell]
+input_path = "~/rice/matugen/templates/Theme.qml"
+output_path = "~/rice/qrice/quickshell/Theme.qml"
+
+[templates.colors_sh]
+input_path = "~/rice/matugen/templates/colors.sh"
+output_path = "~/.cache/matugen/colors.sh"
+
+[templates.kitty]
+input_path = "~/rice/matugen/templates/kitty.conf"
+output_path = "~/.config/kitty/current-theme.conf"

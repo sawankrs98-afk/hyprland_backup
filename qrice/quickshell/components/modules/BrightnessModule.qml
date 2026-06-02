@@ -9,8 +9,8 @@ Item {
 
     property int brightness: 50
 
-    implicitWidth:  pill.implicitWidth
-    implicitHeight: 34
+    implicitWidth:  row.implicitWidth
+    implicitHeight: 30
 
     function brightnessIcon() {
         if (brightness < 20) return "󰃞"
@@ -45,89 +45,58 @@ Item {
         onTriggered: brightnessProc.running = true
     }
 
-    // ── Pill ─────────────────────────────────────────────
-    Rectangle {
-        id: pill
+    // ── Clean Layout ──────────────────────────────────────
+    Row {
+        id: row
         anchors.verticalCenter: parent.verticalCenter
-        height: 30
-        radius: 10
-        implicitWidth: pillRow.implicitWidth + 18
-        clip: true
+        spacing: 6
 
-        color: bMa.containsMouse
-            ? Qt.rgba(Theme.surface.r, Theme.surface.g, Theme.surface.b, 1.0)
-            : "transparent"
-        border.width: 1
-        border.color: bMa.containsMouse
-            ? Qt.rgba(Theme.yellow.r, Theme.yellow.g, Theme.yellow.b, 0.45)
-            : "transparent"
-
-        Behavior on color        { ColorAnimation { duration: 130 } }
-        Behavior on border.color { ColorAnimation { duration: 130 } }
-
-        // Subtle fill bar at bottom — only visible on hover
-        Rectangle {
-            anchors.bottom: parent.bottom
-            anchors.left:   parent.left
-            anchors.leftMargin: 5
-            height: 2
-            radius: 1
-            width: bMa.containsMouse
-                ? (root.brightness / 100) * (pill.width - 10)
-                : 0
-            color:   root.brightnessColor()
-            opacity: 0.65
-            Behavior on width   { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-            Behavior on opacity { NumberAnimation { duration: 150 } }
+        // Icon
+        Text {
+            text:  root.brightnessIcon()
+            color: root.brightnessColor()
+            font.family: Theme.fontFamily
+            font.pixelSize: 16
+            anchors.verticalCenter: parent.verticalCenter
+            
+            // Satisfying click bounce
+            scale: bMa.pressed ? 0.85 : 1.0
+            Behavior on scale { NumberAnimation { duration: 100 } }
+            Behavior on color { ColorAnimation { duration: 200 } }
         }
 
-        RowLayout {
-            id: pillRow
-            anchors.centerIn: parent
-            spacing: 6
-
-            // Icon
-            Text {
-                text:  root.brightnessIcon()
-                color: root.brightnessColor()
-                font.family:    Theme.fontFamily
-                font.pixelSize: 16
-                Layout.alignment: Qt.AlignVCenter
-                Behavior on color { ColorAnimation { duration: 200 } }
-            }
-
-            // Percent — visible on hover
-            Text {
-                visible: bMa.containsMouse
-                opacity: bMa.containsMouse ? 1.0 : 0.0
-                text:  root.brightness + "%"
-                color: Theme.text
-                font.family:    Theme.fontFamily
-                font.pixelSize: 11
-                font.weight:    Font.DemiBold
-                Layout.alignment: Qt.AlignVCenter
-                Behavior on opacity { NumberAnimation { duration: 150 } }
-            }
+        // Percent — Always visible to match Waybar
+        Text {
+            text:  root.brightness + "%"
+            color: Theme.text
+            font.family: Theme.fontFamily
+            font.pixelSize: 13
+            font.weight: Font.DemiBold
+            anchors.verticalCenter: parent.verticalCenter
         }
+    }
 
-        MouseArea {
-            id: bMa
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                Globals.brightnessOpen = !Globals.brightnessOpen
-                Globals.wifiOpen       = false
-                Globals.bluetoothOpen  = false
-                Globals.batteryOpen    = false
-                Globals.volumeOpen     = false
-                Globals.calendarOpen   = false
-            }
-            onWheel: (wheel) => {
-                let cmd = wheel.angleDelta.y > 0 ? "+5%" : "5%-"
-                Quickshell.execDetached(["brightnessctl", "set", cmd])
-                brightnessProc.running = true
-            }
+    MouseArea {
+        id: bMa
+        anchors.fill: parent
+        anchors.margins: -4 // Gives a slightly larger, forgiving click target
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        
+        onClicked: {
+            Globals.brightnessOpen = !Globals.brightnessOpen
+            Globals.wifiOpen       = false
+            Globals.bluetoothOpen  = false
+            Globals.batteryOpen    = false
+            Globals.volumeOpen     = false
+            Globals.calendarOpen   = false
+        }
+        
+        // Scroll wheel to adjust brightness
+        onWheel: (wheel) => {
+            let cmd = wheel.angleDelta.y > 0 ? "+5%" : "5%-"
+            Quickshell.execDetached(["brightnessctl", "set", cmd])
+            brightnessProc.running = true
         }
     }
 }
