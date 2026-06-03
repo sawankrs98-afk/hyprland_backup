@@ -7,116 +7,160 @@ import "../../"
 Item {
     id: root
 
-    // ── Config ─────────────────────────────────────────────
-    readonly property int btnSize:    32      // size of each workspace slot
-    readonly property int activeMargin: 2     // shrink active indicator inward
+    // ── Tokens ────────────────────────────────────────────
+    readonly property int slotW: 38
+    readonly property int slotH: 30
+    readonly property int capsuleH: 30
+    readonly property int pillPad: 3
+    readonly property int trackPadH: 28
 
-    // ── Derived state ──────────────────────────────────────
-    // Build sorted list of all known workspace IDs
+    // ── State ─────────────────────────────────────────────
     property var knownIds: {
-        var ids = Hyprland.workspaces.values.map(ws => ws.id).filter(id => id > 0)
+        var occupied = Hyprland.workspaces.values
+            .map(ws => ws.id)
+            .filter(id => id > 0)
+
         var active = Hyprland.focusedWorkspace?.id ?? 1
-        if (ids.indexOf(active) === -1) ids.push(active)
-        // Always keep a "next" empty slot past the highest
-        var maxId = Math.max.apply(null, ids.length ? ids : [1])
-        if (ids.indexOf(maxId + 1) === -1) ids.push(maxId + 1)
-        ids.sort((a, b) => a - b)
+
+        if (occupied.indexOf(active) === -1)
+            occupied.push(active)
+
+        var maxId = occupied.length
+            ? Math.max.apply(null, occupied)
+            : 1
+
+        var total = Math.max(6, maxId + 1)
+
+        var ids = []
+
+        for (var i = 1; i <= total; i++)
+            ids.push(i)
+
         return ids
     }
 
-    property int activeId:   Hyprland.focusedWorkspace?.id ?? 1
-    property int activeIdx:  knownIds.indexOf(activeId)
+    property int activeId: Hyprland.focusedWorkspace?.id ?? 1
+    property int activeIdx: Math.max(0, knownIds.indexOf(activeId))
 
-    implicitWidth:  btnSize * knownIds.length
-    implicitHeight: btnSize
+    // ── Scroll ────────────────────────────────────────────
+    property real scrollAccum: 0
+    readonly property real scrollThresh: 60
 
-    // Smooth width change as workspaces are added/removed
+    implicitWidth: slotW * knownIds.length
+    implicitHeight: capsuleH
+
     Behavior on implicitWidth {
-        NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
-    }
-
-    // ── Scroll to switch ───────────────────────────────────
-    WheelHandler {
-        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-        onWheel: (event) => {
-            if (event.angleDelta.y < 0)
-                Hyprland.dispatch("hl.dsp.focus({workspace = \"r+1\"})")
-            else
-                Hyprland.dispatch("hl.dsp.focus({workspace = \"r-1\"})")
+        SpringAnimation {
+            spring: 4.0
+            damping: 0.82
+            epsilon: 0.5
         }
     }
 
-    // ── Layer 1: Occupied background pills ────────────────
-    // Connected adjacent occupied workspaces merge into one pill
-    Row {
-        anchors.fill: parent
-        spacing: 0
+    WheelHandler {
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
 
-        Repeater {
-            model: root.knownIds.length
+        onWheel: (event) => {
+            var delta = event.angleDelta.y
 
-            Rectangle {
-                id: occRect
-                width:  root.btnSize
-                height: root.btnSize
+            if (Math.abs(delta) >= 120) {
+                if (delta < 0)
+                    Hyprland.dispatch(`hl.dsp.focus({workspace = "r+1"})`)
+                else
+                    Hyprland.dispatch(`hl.dsp.focus({workspace = "r-1"})`)
 
-                property int wsId:      root.knownIds[index]
-                property bool occupied: Hyprland.workspaces.values.some(ws => ws.id === wsId)
-                property bool isActive: root.activeId === wsId
+                root.scrollAccum = 0
+                return
+            }
 
-                // Merge with neighbours that are also occupied (and not active)
-                property bool mergeLeft: index > 0 && Hyprland.workspaces.values.some(
-                    ws => ws.id === root.knownIds[index - 1]
-                ) && root.activeId !== root.knownIds[index - 1]
+            root.scrollAccum += delta
 
-                property bool mergeRight: index < root.knownIds.length - 1 && Hyprland.workspaces.values.some(
-                    ws => ws.id === root.knownIds[index + 1]
-                ) && root.activeId !== root.knownIds[index + 1]
-
-                // Only show for occupied non-active workspaces
-                opacity: (occupied && !isActive) ? 1 : 0
-
-                color: Qt.rgba(Theme.surface.r, Theme.surface.g, Theme.surface.b, 0.65)
-
-                topLeftRadius:    mergeLeft  ? 0 : height / 2
-                bottomLeftRadius: mergeLeft  ? 0 : height / 2
-                topRightRadius:   mergeRight ? 0 : height / 2
-                bottomRightRadius: mergeRight ? 0 : height / 2
-
-                Behavior on opacity       { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                Behavior on topLeftRadius    { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                Behavior on bottomLeftRadius { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                Behavior on topRightRadius   { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                Behavior on bottomRightRadius { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+            if (root.scrollAccum <= -root.scrollThresh) {
+                Hyprland.dispatch(`hl.dsp.focus({workspace = "r+1"})`)
+                root.scrollAccum = 0
+            } else if (root.scrollAccum >= root.scrollThresh) {
+                Hyprland.dispatch(`hl.dsp.focus({workspace = "r-1"})`)
+                root.scrollAccum = 0
             }
         }
     }
 
-    // ── Layer 2: Active indicator (sliding pill) ──────────
+    // ── Background Track ──────────────────────────────────
     Rectangle {
-        id: activeIndicator
+        anchors.fill: parent
+
+        radius: height / 2
+
+        color: Qt.rgba(
+            Theme.surface.r,
+            Theme.surface.g,
+            Theme.surface.b,
+            0.28
+        )
+
+        border.width: 1
+
+        border.color: Qt.rgba(
+            Theme.borderColor.r,
+            Theme.borderColor.g,
+            Theme.borderColor.b,
+            0.10
+        )
+    }
+
+    // ── Active Pill ───────────────────────────────────────
+    Rectangle {
+        id: activePill
+
         z: 2
 
-        property real targetX: root.activeIdx * root.btnSize + root.activeMargin
-        property real targetW: root.btnSize - root.activeMargin * 2
+        readonly property real targetX:
+            root.activeIdx * root.slotW + 3
 
-        x:      targetX
-        y:      root.activeMargin
-        width:  targetW
-        height: root.btnSize - root.activeMargin * 2
-        radius: height / 2
-        color:  Theme.accent
+        x: targetX
 
-        // Stretchy spring animation: briefly widens toward target then snaps
-        Behavior on x {
-            SmoothedAnimation { velocity: root.btnSize * 12; duration: 260; easing.type: Easing.OutCubic }
+        y: 3
+
+        width: root.slotW - 6
+
+        height: root.capsuleH - 6
+
+        radius: 12
+
+        gradient: Gradient {
+            GradientStop {
+                position: 0
+                color: Qt.lighter(Theme.accent, 1.05)
+            }
+
+            GradientStop {
+                position: 1
+                color: Theme.accent
+            }
         }
-        Behavior on width {
-            SmoothedAnimation { velocity: root.btnSize * 14; duration: 200; easing.type: Easing.OutCubic }
+
+        Rectangle {
+            anchors.fill: parent
+
+            radius: parent.radius
+
+            color: Qt.rgba(
+                1,
+                1,
+                1,
+                0.05
+            )
+        }
+
+        Behavior on x {
+            SpringAnimation {
+                spring: 4.2
+                damping: 0.72
+            }
         }
     }
 
-    // ── Layer 3: Numbers / labels ─────────────────────────
+    // ── Labels + Hit Areas ────────────────────────────────
     Row {
         anchors.fill: parent
         spacing: 0
@@ -126,51 +170,87 @@ Item {
             model: root.knownIds.length
 
             Item {
-                id: wsBtn
-                width:  root.btnSize
-                height: root.btnSize
+                id: slot
 
-                property int  wsId:      root.knownIds[index]
-                property bool isActive:  root.activeId === wsId
-                property bool isOccupied: Hyprland.workspaces.values.some(ws => ws.id === wsId)
-                property bool isHovered: ma.containsMouse
+                width: root.slotW
+                height: root.capsuleH
 
-                // Number label
+                property int wsId: root.knownIds[index]
+
+                property bool isActive:
+                    root.activeId === wsId
+
+                property bool isOccupied:
+                    Hyprland.workspaces.values.some(
+                        ws => ws.id === wsId
+                    )
+
+                property bool isHovered:
+                    hitArea.containsMouse
+
                 Text {
                     anchors.centerIn: parent
-                    text: wsBtn.wsId
-                    font.family:   Theme.fontFamily
-                    font.pixelSize: 14
-                    font.weight:   wsBtn.isActive ? Font.Bold : Font.Medium
-                    color: wsBtn.isActive
-                        ? Theme.base
-                        : wsBtn.isHovered
-                            ? Theme.text
-                            : wsBtn.isOccupied
-                                ? Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.85)
-                                : Qt.rgba(Theme.subtext.r, Theme.subtext.g, Theme.subtext.b, 0.5)
 
-                    Behavior on color { ColorAnimation { duration: 130 } }
-                }
+                    text: slot.wsId
 
-                // Hover highlight ring
-                Rectangle {
-                    anchors.fill: parent
-                    radius: height / 2
-                    color: "transparent"
-                    border.color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b,
-                                          wsBtn.isHovered && !wsBtn.isActive ? 0.35 : 0)
-                    border.width: 1
-                    Behavior on border.color { ColorAnimation { duration: 120 } }
+                    font.family: Theme.fontFamily
+
+                    font.pixelSize: 12
+
+                    font.weight:
+                        slot.isActive
+                            ? Font.Bold
+                            : Font.Medium
+
+                    color:
+                        slot.isActive
+                            ? Theme.base
+                            : slot.isOccupied
+                                ? Qt.rgba(
+                                    Theme.text.r,
+                                    Theme.text.g,
+                                    Theme.text.b,
+                                    0.85
+                                )
+                                : Qt.rgba(
+                                    Theme.subtext.r,
+                                    Theme.subtext.g,
+                                    Theme.subtext.b,
+                                    0.40
+                                )
+
+                    scale:
+                        slot.isHovered && !slot.isActive
+                            ? 1.07
+                            : 1.0
+
+                    Behavior on scale {
+                        SpringAnimation {
+                            spring: 5
+                            damping: 0.75
+                        }
+                    }
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 150
+                        }
+                    }
                 }
 
                 MouseArea {
-                    id: ma
+                    id: hitArea
+
                     anchors.fill: parent
+
                     hoverEnabled: true
-                    cursorShape:  Qt.PointingHandCursor
-                    // ✅ This is the correct API — same as End-4
-                    onClicked: Hyprland.dispatch(`hl.dsp.focus({workspace = ${wsBtn.wsId}})`)
+
+                    cursorShape: Qt.PointingHandCursor
+
+                    onClicked:
+                        Hyprland.dispatch(
+                            `hl.dsp.focus({workspace = ${slot.wsId}})`
+                        )
                 }
             }
         }

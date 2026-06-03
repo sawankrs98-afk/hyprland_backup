@@ -9,9 +9,8 @@ Rectangle {
     
     height: 30
     radius: 15
-    color: Qt.rgba(Theme.base.r, Theme.base.g, Theme.base.b, 0.88)
-    border.color: Qt.rgba(Theme.borderColor.r, Theme.borderColor.g, Theme.borderColor.b, 0.22)
-    border.width: 1
+    color: "transparent" // Removed the pill background
+    border.width: 0      // Removed the border
     
     implicitWidth: mainLayout.implicitWidth + 24
 
@@ -19,7 +18,6 @@ Rectangle {
     property string winTitle: "Desktop"
     property string winIcon: "󱂬"
 
-    // Exact icon dictionary mapping for your application suite
     function resolveIcon(cls) {
         let c = cls.toLowerCase();
         if (c.includes("brave"))    return "";
@@ -40,7 +38,6 @@ Rectangle {
         return "󱂬";
     }
 
-    // Dynamic clean application name formatter
     function resolveAppName(cls) {
         let c = cls.toLowerCase();
         if (c.includes("brave"))    return "Brave";
@@ -61,7 +58,6 @@ Rectangle {
         return c.charAt(0).toUpperCase() + c.slice(1);
     }
 
-    // High-performance state collector tracking active Hyprland node
     Process {
         id: titlePoller
         command: ["sh", "-c", "active=$(hyprctl activewindow); class=$(echo \"$active\" | grep 'class:' | awk '{print $2}'); title=$(echo \"$active\" | grep 'title:' | cut -d' ' -f2-); echo \"$class|$title\""]
@@ -82,7 +78,7 @@ Rectangle {
     }
 
     Timer {
-        interval: 100 // ← Changed from 1000 to 100 for spontaneous updates
+        interval: 100
         running: true
         repeat: true
         triggeredOnStart: true
@@ -94,7 +90,6 @@ Rectangle {
         anchors.centerIn: parent
         spacing: 8
 
-        // Icon scaled exactly to 17
         Text {
             text: root.winIcon
             color: Theme.accent
@@ -102,7 +97,6 @@ Rectangle {
             font.pixelSize: 17
         }
 
-        // Text title scaled exactly to 14
         Text {
             text: root.winTitle
             color: Theme.text
@@ -115,7 +109,7 @@ Rectangle {
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor // ← Changes cursor to hand pointer
+        cursorShape: Qt.PointingHandCursor
         
         scale: containsMouse ? (pressed ? 0.96 : 1.03) : 1.0
         Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
@@ -123,7 +117,6 @@ Rectangle {
         onClicked: {
             Globals.controlCenterOpen = !Globals.controlCenterOpen
             
-            // Gracefully dismiss competing popups
             Globals.wifiOpen = false
             Globals.bluetoothOpen = false
             Globals.batteryOpen = false
@@ -136,7 +129,6 @@ Rectangle {
         }
     }
 
-    // Auto-dismiss the control center if another system tray menu is clicked
     Connections {
         target: Globals
         function onWifiOpenChanged()          { if (Globals.wifiOpen)          Globals.controlCenterOpen = false }

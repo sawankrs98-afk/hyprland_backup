@@ -29,15 +29,15 @@ readonly property int mediaPopupHeight: {
 
 // Per-popup dimensions — change freely
 readonly property var popupSizes: ({
-"wifi":          { width: 360, height: 500, isLeft: false, margin: 6 },
+"wifi":          { width: 400, height: 500, isLeft: false, margin: 6 },
 "bluetooth":     { width: 400, height: 500, isLeft: false, margin: 6 },
-"battery":       { width: 420, height: 460, isLeft: false, margin: 6 },
+"battery":       { width: 400, height: 500, isLeft: false, margin: 6 },
 "volume":        { width: 380, height: 460, isLeft: false, margin: 6 },
 "calendar":      { width: 640, height: 400, isLeft: false, margin: 6 },  
 "brightness":    { width: 380, height: 300, isLeft: false, margin: 6 },
-"notifications": { width: 540, height: 740, isLeft: false, margin: 6 },
+"notifications": { width: 400, height: 500, isLeft: false, margin: 6 },
 "media":         { width: 420, height: 340, isLeft: false,  margin: 200 }, 
-"controlcenter": { width: 700, height: 700, isLeft: true,  margin: 600 }, 
+"controlcenter": { width: 500, height: 1100, isLeft: false,  margin: 6 }, 
 "system":        { width: 360, height: 360, isLeft: false, margin: 320 }   
 })
 

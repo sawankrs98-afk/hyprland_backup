@@ -12,7 +12,7 @@ Item {
 
     Text {
         anchors.centerIn: parent
-        text: "󰣇"
+        text: "✦"
         color: launchMa.containsMouse ? Theme.accent : Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.75)
         font.family: Theme.fontFamily
         font.pixelSize: 25

@@ -30,14 +30,6 @@ Item {
         return "󰤯"
     }
 
-    function signalColor() {
-        if (!connected) return Theme.muted
-        let s = parseInt(signal)
-        if (s >= 60) return Theme.blue
-        if (s >= 30) return Theme.yellow
-        return Theme.red
-    }
-
     // ── Wifi signal polling ───────────────────────────────
     Process {
         id: wifiProc
@@ -98,15 +90,13 @@ Item {
 
         // ── Clean Icon ───────────────────────────────────────
         Text {
-            id: wifiIconText
-            anchors.verticalCenter: parent.verticalCenter
-            text:  root.wifiIcon()
-            color: root.signalColor()
-            font.family: Theme.fontFamily
-            font.pixelSize: 18
-
-            Behavior on color { ColorAnimation { duration: 200 } }
-        }
+    id: wifiIconText
+    anchors.verticalCenter: parent.verticalCenter
+    text: root.wifiIcon()
+    color: Theme.text
+    font.family: Theme.fontFamily
+    font.pixelSize: 18
+}
 
         // ── Conditional Speed Label ──────────────────────────
         Text {

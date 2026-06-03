@@ -6,10 +6,11 @@ import "../../../"
 
 Rectangle {
     id: slidersCard
-    radius: 20
-    color: Qt.rgba(Theme.surface.r, Theme.surface.g, Theme.surface.b, 0.45)
-    border.color: Qt.rgba(Theme.borderColor.r, Theme.borderColor.g, Theme.borderColor.b, 0.15)
+    radius: 28
+    color: Qt.rgba(Theme.surface.r, Theme.surface.g, Theme.surface.b, 0.4)
+    border.color: Qt.rgba(Theme.borderColor.r, Theme.borderColor.g, Theme.borderColor.b, 0.1)
     border.width: 1
+    clip: true
 
     // ── NATIVE HARDWARE REGISTERS ──
     property int masterVolume: 50
@@ -67,80 +68,83 @@ Rectangle {
         anchors.margins: 18
         spacing: 16
 
-        // ── INLINE REUSABLE SLIDER CARD SUB-COMPONENT ──
-        component CCSliderRow: RowLayout {
+        // ── INLINE REUSABLE SLIDER (Android "Split Pill" Style) ──
+        component CCSliderRow: Item {
             id: sliderRowRoot
             Layout.fillWidth: true
-            Layout.fillHeight: true
-            spacing: 14
+            Layout.preferredHeight: 48 // Slimmer, matches the screenshot better
 
-            // Component Configuration Api
-            property string icon: ""
-            property color accentColor: Theme.accent
+            property string iconLow: ""
+            property string iconHigh: ""
             property int targetValue: 50
             property var dispatcherAction: function(val){}
 
-            // Left Side: Status Bubble Anchor
+            // Bouncy Scale Animation
+            scale: sliderMouse.pressed ? 0.97 : 1.0
+            Behavior on scale { SpringAnimation { spring: 5.0; damping: 0.6 } }
+
+            // ── Track Background ──
             Rectangle {
-                id: iconBubble
-                width: 38
-                height: 38
-                radius: 19
-                color: Qt.rgba(sliderRowRoot.accentColor.r, sliderRowRoot.accentColor.g, sliderRowRoot.accentColor.b, 0.12)
-                border.color: Qt.rgba(sliderRowRoot.accentColor.r, sliderRowRoot.accentColor.g, sliderRowRoot.accentColor.b, 0.3)
-                border.width: 1
+                id: trackBg
+                anchors.fill: parent
+                radius: height / 2
+                // Uses the accent color for everything, just lower opacity for the background
+                color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.15)
+                clip: true
 
+                // Right Icon (High state)
                 Text {
-                    anchors.centerIn: parent
-                    text: sliderRowRoot.icon
-                    color: sliderRowRoot.accentColor
-                    font.pixelSize: 18
-                }
-            }
-
-            // Right Side: Immersive Track Slideway
-            Item {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-
-                Rectangle {
-                    id: trackTrack
+                    anchors.right: parent.right
+                    anchors.rightMargin: 18
                     anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    height: 20
-                    radius: 10
-                    color: Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.05)
-                    border.color: Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.04)
-                    border.width: 1
+                    text: sliderRowRoot.iconHigh
+                    color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.8)
+                    font.pixelSize: 20
+                }
 
-                    // Active Channel Fill
-                    Rectangle {
-                        height: parent.height
-                        radius: parent.radius
-                        color: sliderRowRoot.accentColor
-                        // Dynamic width boundary protection logic
-                        width: Math.max(parent.height, (parent.width * sliderRowRoot.targetValue) / 100)
+                // ── Active Fill ──
+                Rectangle {
+                    id: trackFill
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    
+                    // Logic ensures the fill stays a pill shape
+                    width: Math.max(parent.height, (parent.width * sliderRowRoot.targetValue) / 100)
+                    radius: parent.radius
+                    color: Theme.accent
 
-                        Behavior on width { 
-                            NumberAnimation { duration: 120; easing.type: Easing.OutCubic } 
-                        }
+                    Behavior on width { 
+                        NumberAnimation { duration: 150; easing.type: Easing.OutCubic } 
                     }
 
-                    // Numeric Floating Readout
+                    // Left Icon (Low state - cut out of the bright fill)
                     Text {
-                        anchors.right: parent.right
-                        anchors.rightMargin: 12
+                        anchors.left: parent.left
+                        anchors.leftMargin: 18
                         anchors.verticalCenter: parent.verticalCenter
-                        text: sliderRowRoot.targetValue + "%"
-                        color: Theme.text
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 11
-                        font.weight: Font.Black
+                        text: sliderRowRoot.iconLow
+                        color: Theme.base 
+                        font.pixelSize: 20
+                    }
+                    
+                    // Vertical Thumb Separator (Matches the Android screenshot)
+                    Rectangle {
+                        anchors.right: parent.right
+                        anchors.rightMargin: 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 2
+                        height: 24
+                        radius: 1
+                        color: Qt.rgba(Theme.base.r, Theme.base.g, Theme.base.b, 0.25)
+                        // Hide it if the slider is pushed all the way to 0 to prevent glitching
+                        visible: trackFill.width > parent.height + 10 
                     }
                 }
 
-                // Interactive Tracking Area
+                // Interactive Mouse Tracking
                 MouseArea {
+                    id: sliderMouse
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     
@@ -151,7 +155,19 @@ Rectangle {
                     }
 
                     onClicked: (mouse) => updateCoordinates(mouse)
-                    onPositionChanged: (mouse) => updateCoordinates(mouse)
+                    onPositionChanged: (mouse) => {
+                        if (pressed) updateCoordinates(mouse)
+                    }
+                }
+
+                // Scroll Wheel Support
+                WheelHandler {
+                    target: sliderRowRoot
+                    onWheel: (event) => {
+                        let step = event.angleDelta.y > 0 ? 5 : -5
+                        let newVal = Math.max(0, Math.min(100, sliderRowRoot.targetValue + step))
+                        sliderRowRoot.dispatcherAction(newVal)
+                    }
                 }
             }
         }
@@ -159,8 +175,8 @@ Rectangle {
         // ── HARDWARE MATRIX DISPATCHERS ──
 
         CCSliderRow {
-            icon: "󰕾"
-            accentColor: Theme.accent
+            iconLow: "󰕿"
+            iconHigh: "󰕾"
             targetValue: slidersCard.masterVolume
             dispatcherAction: function(p) {
                 slidersCard.masterVolume = p
@@ -169,8 +185,8 @@ Rectangle {
         }
 
         CCSliderRow {
-            icon: "󰍬"
-            accentColor: Theme.teal
+            iconLow: "󰍭"
+            iconHigh: "󰍬"
             targetValue: slidersCard.microphoneInput
             dispatcherAction: function(p) {
                 slidersCard.microphoneInput = p
@@ -179,8 +195,8 @@ Rectangle {
         }
 
         CCSliderRow {
-            icon: "󰃠"
-            accentColor: Theme.peach
+            iconLow: "󰃞"
+            iconHigh: "󰃠"
             targetValue: slidersCard.displayBrightness
             dispatcherAction: function(p) {
                 slidersCard.displayBrightness = p

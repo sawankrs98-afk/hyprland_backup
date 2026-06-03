@@ -20,8 +20,7 @@ hl.config({
         border_size = 2,
 
         col = {
-            -- Gradients must be defined as a table in the Lua config
-            active_border = use_matugen and { colors = { colors.primary, colors.primaryFixed }, angle = 45 } or "rgba(0DB7D455)",
+            active_border = use_matugen and colors.primary or "rgba(0DB7D455)",
             inactive_border = use_matugen and colors.outline or "rgba(31313600)"
         },
         resize_on_border = true,
@@ -47,7 +46,7 @@ hl.config({
             special = false,
             new_optimizations = true,
             size = 10,
-            passes = 2,
+            passes = 3,
             brightness = 1,
             noise = 0.05,
             contrast = 0.89,
@@ -155,9 +154,21 @@ hl.animation({
 })
 hl.animation({
     leaf = "border",
-    enabled = true,
+    enabled = false,
     speed = 10,
     bezier = "emphasizedDecel"
+})
+hl.animation({
+    leaf = "borderangle",
+    enabled = false
+})
+hl.animation({
+    leaf = "fadeSwitch",
+    enabled = false
+})
+hl.animation({
+    leaf = "fadeDim",
+    enabled = false
 })
 
 -- layers
@@ -218,6 +229,8 @@ hl.animation({
     speed = 3,
     bezier = "standardDecel"
 })
+
+
 
 hl.config({
     input = {

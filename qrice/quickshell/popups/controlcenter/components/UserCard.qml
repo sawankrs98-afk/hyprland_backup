@@ -7,10 +7,11 @@ import "../../../"
 
 Rectangle {
     id: userCard
-    radius: 20
-    color: Qt.rgba(Theme.surface.r, Theme.surface.g, Theme.surface.b, 0.45)
+    radius: 28
+    color: Qt.rgba(Theme.surface.r, Theme.surface.g, Theme.surface.b, 0.6)
     border.color: Qt.rgba(Theme.borderColor.r, Theme.borderColor.g, Theme.borderColor.b, 0.15)
     border.width: 1
+    clip: true
 
     // ── NATIVE DATA STATES ──
     property string currentTime: "00:00"
@@ -73,16 +74,13 @@ Rectangle {
     RowLayout {
         anchors.fill: parent
         anchors.margins: 20
-        spacing: 16
+        spacing: 20
 
-        // ── LEFT: PFP & IDENTITY ──
-        
-        // 1. True Circular Profile Picture
+        // ── LEFT: AVATAR (Modern Squircle) ──
         Item {
-            width: 56
-            height: 56
+            width: 68
+            height: 68
 
-            // The raw image (Hidden)
             Image {
                 id: pfpImage
                 anchors.fill: parent
@@ -93,16 +91,14 @@ Rectangle {
                 cache: true
             }
 
-            // The vector mask (Hidden)
             Rectangle {
                 id: pfpMask
                 anchors.fill: parent
-                radius: 28
+                radius: 22 // Softer squircle shape
                 color: "black"
                 visible: false
             }
 
-            // The engine that stamps the image into the mask
             MultiEffect {
                 source: pfpImage
                 anchors.fill: parent
@@ -110,27 +106,27 @@ Rectangle {
                 maskSource: pfpMask
             }
 
-            // The premium border layered on top of the masked image
+            // Subtle inner ring to separate dark images from dark backgrounds
             Rectangle {
                 anchors.fill: parent
-                radius: 28
+                radius: 22
                 color: "transparent"
-                border.color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.6)
-                border.width: 1.5
+                border.color: Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.08)
+                border.width: 1
             }
 
-            // Failsafe fallback icon
             Text {
                 anchors.centerIn: parent
                 text: "󰆚" 
                 color: Theme.accent
-                font.pixelSize: 26
+                font.pixelSize: 32
                 visible: pfpImage.status === Image.Error || pfpImage.status === Image.Null
             }
         }
 
-        // 2. Identity Text Stack
+        // ── CENTER: IDENTITY ──
         ColumnLayout {
+            Layout.alignment: Qt.AlignVCenter
             spacing: 2
             
             Text {
@@ -138,28 +134,39 @@ Rectangle {
                 text: userCard.greeting
                 color: Theme.subtext
                 font.family: Theme.fontFamily
-                font.pixelSize: 12
+                font.pixelSize: 14
                 font.weight: Font.Medium
             }
             
             Text {
                 Layout.fillWidth: true
-                text: userCard.sysUser + " @ " + userCard.sysHost
+                text: userCard.sysUser
                 color: Theme.text
                 font.family: Theme.fontFamily
-                font.pixelSize: 16
+                font.pixelSize: 22
                 font.weight: Font.Bold
+                font.capitalization: Font.Capitalize
                 elide: Text.ElideRight
             }
             
+            // Modern Uptime Indicator with glowing dot
             RowLayout {
                 spacing: 6
-                Text { text: "󰅐"; color: Theme.muted; font.pixelSize: 12 }
+                Rectangle {
+                    width: 6; height: 6; radius: 3
+                    color: Theme.green
+                    // Optional subtle glow effect
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 12; height: 12; radius: 6
+                        color: Qt.rgba(Theme.green.r, Theme.green.g, Theme.green.b, 0.25)
+                    }
+                }
                 Text {
-                    text: "System Uptime: " + userCard.sysUptime
+                    text: "up " + userCard.sysUptime
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     font.weight: Font.Medium
                 }
             }
@@ -168,107 +175,100 @@ Rectangle {
         // ── FLEX BUFFER ──
         Item { Layout.fillWidth: true }
 
-        // ── RIGHT: CLOCK, DATE, & ACTIONS ──
+        // ── RIGHT: CLOCK & ACTIONS ──
         ColumnLayout {
             Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-            spacing: 8
+            spacing: 10
 
-            // 1. Time & Date Matrix
-            RowLayout {
+            // 1. Heavy Clock & Accent Date
+            ColumnLayout {
                 Layout.alignment: Qt.AlignRight
-                spacing: 12
-
-                ColumnLayout {
-                    spacing: -4
-                    Text {
-                        Layout.alignment: Qt.AlignRight
-                        text: userCard.currentDate
-                        color: Theme.accent
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 12
-                        font.weight: Font.Bold
-                        font.capitalization: Font.AllUppercase
-                    }
-                    Text {
-                        Layout.alignment: Qt.AlignRight
-                        text: userCard.currentTime
-                        color: Theme.text
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 32
-                        font.weight: Font.Black
-                        font.letterSpacing: -1
-                    }
+                spacing: -6
+                
+                Text {
+                    Layout.alignment: Qt.AlignRight
+                    text: userCard.currentTime
+                    color: Theme.text
+                    font.family: "Inter"
+                    font.pixelSize: 34
+                    font.weight: Font.Black
+                    font.letterSpacing: -1.5
+                }
+                Text {
+                    Layout.alignment: Qt.AlignRight
+                    text: userCard.currentDate
+                    color: Theme.accent
+                    font.family: "Inter"
+                    font.pixelSize: 12
+                    font.weight: Font.Bold
+                    font.capitalization: Font.AllUppercase
+                    font.letterSpacing: 0.5
                 }
             }
 
-            // 2. Battery Pill & Quick Lock
-            RowLayout {
+            // 2. Unified Battery & Lock Pill
+            Rectangle {
                 Layout.alignment: Qt.AlignRight
-                spacing: 10
+                width: unifiedPillRow.implicitWidth + 24
+                height: 30
+                radius: 15
+                color: Qt.rgba(Theme.base.r, Theme.base.g, Theme.base.b, 0.45)
+                border.color: Qt.rgba(Theme.borderColor.r, Theme.borderColor.g, Theme.borderColor.b, 0.15)
+                border.width: 1
 
-                Rectangle {
-                    width: 64
-                    height: 24
-                    radius: 12
-                    color: Qt.rgba(Theme.base.r, Theme.base.g, Theme.base.b, 0.4)
-                    border.color: Qt.rgba(Theme.borderColor.r, Theme.borderColor.g, Theme.borderColor.b, 0.1)
-                    border.width: 1
-                    clip: true
+                RowLayout {
+                    id: unifiedPillRow
+                    anchors.centerIn: parent
+                    spacing: 10
 
-                    Rectangle {
-                        height: parent.height
-                        radius: parent.radius
-                        width: parent.width * (userCard.batPercent / 100)
-                        color: {
-                            if (userCard.batStatus === "Charging") return Qt.rgba(Theme.green.r, Theme.green.g, Theme.green.b, 0.25)
-                            if (userCard.batPercent <= 20) return Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.25)
-                            return Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.1)
-                        }
-                        Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
-                    }
-
+                    // Battery Area
                     RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: 6
                         spacing: 4
                         Text { 
                             text: userCard.batStatus === "Charging" ? "󰂄" : (userCard.batPercent <= 20 ? "󰂃" : "󰁹")
                             color: userCard.batStatus === "Charging" ? Theme.green : (userCard.batPercent <= 20 ? Theme.red : Theme.subtext)
-                            font.pixelSize: 12 
+                            font.pixelSize: 13 
                         }
                         Text { 
-                            Layout.fillWidth: true
                             text: userCard.batPercent + "%"
                             color: Theme.text
                             font.family: Theme.fontFamily
-                            font.pixelSize: 11
+                            font.pixelSize: 12
                             font.weight: Font.Bold
-                            horizontalAlignment: Text.AlignHCenter
                         }
                     }
-                }
 
-                Rectangle {
-                    width: 24
-                    height: 24
-                    radius: 12
-                    color: Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.15)
-                    border.color: Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.3)
-                    border.width: 1
+                    // Divider
+                    Rectangle {
+                        width: 1; height: 14
+                        color: Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.15)
+                    }
 
-                    Text { anchors.centerIn: parent; text: "󰌾"; color: Theme.red; font.pixelSize: 12 }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        hoverEnabled: true
+                    // Lock Action
+                    Item {
+                        width: 16; height: 16
+                        Text { 
+                            anchors.centerIn: parent
+                            text: "󰌾"
+                            color: lockHover.hovered ? Theme.red : Theme.subtext
+                            font.pixelSize: 13 
+                            Behavior on color { ColorAnimation { duration: 150 } }
+                        }
                         
-                        scale: containsMouse ? (pressed ? 0.9 : 1.1) : 1.0
-                        Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
+                        HoverHandler { id: lockHover }
+                        
+                        MouseArea {
+                            anchors.fill: parent
+                            anchors.margins: -6 // Generous click target
+                            cursorShape: Qt.PointingHandCursor
+                            
+                            scale: containsMouse ? (pressed ? 0.8 : 1.15) : 1.0
+                            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
 
-                        onClicked: {
-                            Globals.controlCenterOpen = false
-                            Quickshell.execDetached(["loginctl", "lock-session"])
+                            onClicked: {
+                                Globals.controlCenterOpen = false
+                                Quickshell.execDetached(["loginctl", "lock-session"])
+                            }
                         }
                     }
                 }

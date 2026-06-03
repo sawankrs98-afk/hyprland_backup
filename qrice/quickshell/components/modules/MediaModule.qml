@@ -10,9 +10,7 @@ Rectangle {
     
     height: 30
     radius: 15
-    color: Qt.rgba(Theme.base.r, Theme.base.g, Theme.base.b, 0.88)
-    border.color: Qt.rgba(Theme.borderColor.r, Theme.borderColor.g, Theme.borderColor.b, 0.22)
-    border.width: 1
+    color: "transparent"
     
     implicitWidth: mainLayout.implicitWidth + 24
 
@@ -61,16 +59,16 @@ Rectangle {
 
         Text {
             text: {
-                if (!root.currentPlayer) return "Music Idle"
+                if (!root.currentPlayer) return ""
 
                 let title = root.currentPlayer.trackTitle || ""
                 let artist = root.currentPlayer.trackArtist || ""
                 let combined = artist.length > 0 ? title + " • " + artist : title
 
-                return combined.length > 24 ? combined.substring(0, 22) + ".." : combined
+                return combined.length > 30 ? combined.substring(0, 30) + ".." : combined
             }
             color: Theme.subtext
-            font.family: Theme.fontFamily
+            font.family: "Inter"
             font.pixelSize: 14
             font.weight: Font.Medium
         }

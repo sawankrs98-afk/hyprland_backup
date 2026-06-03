@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Updated variables to your current username and repository architecture
-WALLPAPER_DIR="/home/suzaku/Pictures/Wallpapers"
+WALLPAPER_DIR="/home/kirito/Pictures/Wallpapers"
 CACHE_DIR="$HOME/.cache/wallpaper-thumbnails"
-RICE_DIR="/home/suzaku/rice"
+RICE_DIR="/home/kirito/rice"
 
 mkdir -p "$CACHE_DIR"
 
@@ -93,6 +93,7 @@ WLOGOUT_TEXT="$foreground"
 WLOGOUT_BUTTON_BG="${background}E6"
 WLOGOUT_BORDER="${color4}4D"
 
+# Format colors for direct hyprctl engine streaming (stripping # symbol)
 HYPR_ACTIVE_1="rgb(${color4:1})"
 HYPR_ACTIVE_2="rgb(${color6:1})"
 HYPR_INACTIVE="rgb(${color8:1})"
@@ -121,6 +122,9 @@ sed -i "s|@define-color cyan .*;|@define-color cyan   $SWAYNC_CYAN;|" "$RICE_DIR
 swaync-client -rs
 
 # ── WLOGOUT ────────────────────────────────────────────
+sed -i "s|@define-color text .*;|@define-color text   $WLOGOUT_TEXT;|" "$RICE_DIR/wlogout/style.css"
+sed -i "s|@define-color bg_button .*;|@define-color bg_button $WLOGOUT_BUTTON_BG;|" "$RICE_DIR/wlogout/style.css"
+sed -i "s|@define-color border .*;|@define-color border $WLOGOUT_BORDER;|" "$RICE_DIR/wlogout/style.css"
 
 # ── CAVA GRADIENT ──────────────────────────────────────
 sed -i "s|gradient_color_1 = .*|gradient_color_1 = '${color1}';|" "$RICE_DIR/cava/config"
@@ -131,7 +135,21 @@ sed -i "s|gradient_color_5 = .*|gradient_color_5 = '${color5}';|" "$RICE_DIR/cav
 sed -i "s|gradient_color_6 = .*|gradient_color_6 = '${color6}';|" "$RICE_DIR/cava/config"
 pkill -USR1 cava
 
-# ── HYPRLAND BORDERS ───────────────────────────────────
+# ── HYPRLAND BORDERS (NATIVE LUA STREAM ENGINE) ────────
+# hyprctl keyword general:col.active_border "$HYPR_ACTIVE_1 $HYPR_ACTIVE_2 45deg"
+# hyprctl keyword general:col.inactive_border "$HYPR_INACTIVE"
+
+# Write color properties into your modular Lua cache file for reboots
+cat << EOF > "$RICE_DIR/hypr/lua/matugen_colors.lua"
+local M = {}
+M.primary = "${color4}"
+M.primaryFixed = "${color6}"
+M.outline = "${color8}"
+M.background = "${background}"
+M.foreground = "${foreground}"
+return M
+EOF
+
 hyprctl reload
 
 # ── KITTY ──────────────────────────────────────────────

@@ -59,24 +59,29 @@ Item {
     }
 
     // ── Clean Icon with Animations ────────────────────────
-    Text {
-        id: btIconText
-        anchors.centerIn: parent
+Text {
+    id: btIconText
+    anchors.centerIn: parent
 
-        text: !root.powered ? "󰂲" : (root.connected ? "󰂱" : "󰂯")
-        
-        // Muted when off, Blue when connected, Subtext when on but disconnected
-        color: !root.powered ? Theme.muted : (root.connected ? Theme.blue : Theme.subtext)
+    text: !root.powered
+        ? "󰂲"
+        : (root.connected ? "󰂱" : "󰂯")
 
-        font.family: Theme.fontFamily
-        font.pixelSize: 18
-        
-        // Satisfying click bounce
-        scale: btMouse.pressed ? 0.85 : 1.0
+    color: "#ffffff"
 
-        Behavior on color { ColorAnimation { duration: 200 } }
-        Behavior on scale { NumberAnimation { duration: 100 } }
+    font.family: Theme.fontFamily
+    font.pixelSize: 18
+
+    scale: btMouse.pressed ? 0.85 : 1.0
+
+    Behavior on color {
+        ColorAnimation { duration: 200 }
     }
+
+    Behavior on scale {
+        NumberAnimation { duration: 100 }
+    }
+}
 
     MouseArea {
         id: btMouse
